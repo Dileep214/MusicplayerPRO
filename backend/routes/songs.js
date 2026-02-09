@@ -1,34 +1,7 @@
 const express = require('express');
 const router = express.Router();
-const multer = require('multer');
-const path = require('path');
-const fs = require('fs');
+const { upload } = require('../utils/cloudinary');
 const Song = require('../models/Song');
-
-// Multer Config - Disk Storage
-const storage = multer.diskStorage({
-    destination: function (req, file, cb) {
-        const folder = file.fieldname === 'audioFile' ? 'songs' : 'images';
-        const uploadPath = path.join(__dirname, '../uploads', folder);
-
-        // Ensure directory exists
-        if (!fs.existsSync(uploadPath)) {
-            fs.mkdirSync(uploadPath, { recursive: true });
-        }
-        cb(null, uploadPath);
-    },
-    filename: function (req, file, cb) {
-        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-        cb(null, uniqueSuffix + '-' + file.originalname.replace(/ /g, '_'));
-    }
-});
-
-const upload = multer({
-    storage,
-    limits: {
-        fileSize: 15 * 1024 * 1024, // 15MB limit for audio
-    }
-});
 
 // GET /api/songs - Get all songs
 router.get('/', async (req, res) => {
@@ -52,15 +25,12 @@ router.post('/', upload.fields([
         let audioUrl = req.body.audioUrl;
         let coverImg = req.body.coverImg;
 
-        // Construct base URL for files
-        const baseUrl = `${req.protocol}://${req.get('host')}`;
-
-        // Set local file paths if uploaded
+        // Set Cloudinary file paths if uploaded
         if (req.files && req.files['audioFile']) {
-            audioUrl = `${baseUrl}/uploads/songs/${req.files['audioFile'][0].filename}`;
+            audioUrl = req.files['audioFile'][0].path;
         }
         if (req.files && req.files['coverImgFile']) {
-            coverImg = `${baseUrl}/uploads/images/${req.files['coverImgFile'][0].filename}`;
+            coverImg = req.files['coverImgFile'][0].path;
         }
 
         const newSong = new Song({

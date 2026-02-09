@@ -1,34 +1,7 @@
 const express = require('express');
 const router = express.Router();
-const multer = require('multer');
-const path = require('path');
-const fs = require('fs');
+const { upload } = require('../utils/cloudinary');
 const Album = require('../models/Album');
-
-// Multer Config - Disk Storage
-const storage = multer.diskStorage({
-    destination: function (req, file, cb) {
-        const folder = file.fieldname === 'songFiles' ? 'songs' : 'images';
-        const uploadPath = path.join(__dirname, '../uploads', folder);
-
-        // Ensure directory exists
-        if (!fs.existsSync(uploadPath)) {
-            fs.mkdirSync(uploadPath, { recursive: true });
-        }
-        cb(null, uploadPath);
-    },
-    filename: function (req, file, cb) {
-        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-        cb(null, uniqueSuffix + '-' + file.originalname.replace(/ /g, '_'));
-    }
-});
-
-const upload = multer({
-    storage,
-    limits: {
-        fileSize: 50 * 1024 * 1024, // 50MB limit
-    }
-});
 
 // GET /api/albums - Get all albums
 router.get('/', async (req, res) => {
@@ -65,10 +38,9 @@ router.post('/', (req, res, next) => {
         const Song = require('../models/Song');
 
         let coverImg = req.body.coverImg;
-        const baseUrl = `${req.protocol}://${req.get('host')}`;
 
         if (req.files && req.files['coverImgFile']) {
-            coverImg = `${baseUrl}/uploads/images/${req.files['coverImgFile'][0].filename}`;
+            coverImg = req.files['coverImgFile'][0].path;
         }
 
         // Create the Album first (without songs)
@@ -92,7 +64,7 @@ router.post('/', (req, res, next) => {
                     title: songTitle,
                     artist: artist, // Link to album artist by default
                     album: title,
-                    audioUrl: `${baseUrl}/uploads/songs/${file.filename}`,
+                    audioUrl: file.path,
                     coverImg: coverImg, // Use album cover as song cover
                     duration: "3:30", // Placeholder duration
                     category: "Album Track"
