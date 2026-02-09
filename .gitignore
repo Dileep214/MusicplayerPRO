@@ -1,0 +1,82 @@
+# Environment Variables (API Keys, Database URIs, Secrets)
+.env
+.env.local
+.env.development
+.env.test
+.env.production
+*.env
+
+# Dependencies
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Build outputs
+dist/
+dist-ssr/
+build/
+*.local
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea/
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Testing
+coverage/
+*.lcov
+.nyc_output
+
+# Uploads and user-generated content
+uploads/
+*.mp3
+*.wav
+*.flac
+*.m4a
+*.ogg
+
+# Temporary files
+*.tmp
+*.temp
+temp/
+tmp/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Database files
+*.sqlite
+*.db
+
+# Cache
+.cache/
+.parcel-cache/
+.eslintcache
+
+# Output files
+output.txt
+sync_log.txt
+all_songs_check.txt

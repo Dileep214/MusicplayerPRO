@@ -1,0 +1,102 @@
+@import "tailwindcss";
+
+/* Custom Scrollbar for song list */
+.custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+    display: block;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(59, 130, 246, 0.4);
+    border-radius: 10px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: rgba(59, 130, 246, 0.6);
+}
+
+/* Wavy Blue Progress Bar */
+@keyframes wave-gradient {
+    0% {
+        background-position: 100% 0%;
+    }
+
+    100% {
+        background-position: 0% 0%;
+    }
+}
+
+.bg-wavy-blue {
+    background: linear-gradient(90deg, #3b82f6, #60a5fa, #3b82f6);
+    background-size: 200% 100%;
+    animation: wave-gradient 2s linear infinite;
+}
+
+/* Wavy Floating Text */
+@keyframes float {
+
+    0%,
+    100% {
+        transform: translateY(0px) rotate(0deg);
+    }
+
+    25% {
+        transform: translateY(-2px) rotate(1deg);
+    }
+
+    75% {
+        transform: translateY(2px) rotate(-1deg);
+    }
+}
+
+.wavy-time {
+    color: #60a5fa;
+    font-weight: 700;
+    text-shadow: 0 0 10px rgba(59, 130, 246, 0.5);
+    display: inline-block;
+    animation: float 4s ease-in-out infinite;
+    letter-spacing: 0.05em;
+}
+
+.wavy-time-delay {
+    animation-delay: 2s;
+}
+
+/* Moving Wave Effect when Playing */
+@keyframes wave-move {
+    0% {
+        transform: translateX(0);
+    }
+
+    100% {
+        transform: translateX(-20px);
+    }
+}
+
+.playing .wavy-move::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    background-size: 40px 100%;
+    animation: wave-move 1s linear infinite;
+}
+
+/* Global Hide Default Scrollbars */
+
+* {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
+*::-webkit-scrollbar {
+    display: none;
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+    display: block;
+}
