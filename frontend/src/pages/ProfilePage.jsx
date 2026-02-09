@@ -3,7 +3,7 @@ import BackgroundWrapper from '../components/BackgroundWrapper';
 import Navbar from '../components/Navbar';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import API_URL from '../api/config';
+import API_URL from '../config';
 
 const ProfilePage = () => {
     const navigate = useNavigate();

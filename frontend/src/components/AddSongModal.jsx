@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { X, Upload, Music, Mic, Clock, Disc } from 'lucide-react';
 import axios from 'axios';
-import API_URL from '../api/config';
+import API_URL from '../config';
 
 const AddSongModal = ({ isOpen, onClose, onSongAdded }) => {
     const [formData, setFormData] = useState({

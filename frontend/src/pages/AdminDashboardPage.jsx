@@ -15,7 +15,7 @@ import AddSongModal from '../components/AddSongModal';
 import AddAlbumModal from '../components/AddAlbumModal';
 import Navbar from '../components/Navbar';
 import BackgroundWrapper from '../components/BackgroundWrapper';
-import API_URL from '../api/config';
+import API_URL from '../config';
 
 const AdminDashboardPage = () => {
     const [stats, setStats] = useState({

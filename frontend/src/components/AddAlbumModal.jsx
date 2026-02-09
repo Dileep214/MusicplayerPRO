@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { X, Upload, Disc, User, Calendar, Music } from 'lucide-react';
 import axios from 'axios';
-import API_URL from '../api/config';
+import API_URL from '../config';
 
 const AddAlbumModal = ({ isOpen, onClose, onAlbumAdded }) => {
     const [formData, setFormData] = useState({

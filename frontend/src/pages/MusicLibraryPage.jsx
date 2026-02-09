@@ -7,7 +7,7 @@ import SongItem from '../components/SongItem';
 import MusicPlayer from '../components/MusicPlayer';
 
 import { useMusic } from '../context/MusicContext';
-import API_URL from '../api/config';
+import API_URL from '../config';
 
 const MusicLibraryPage = () => {
     const {

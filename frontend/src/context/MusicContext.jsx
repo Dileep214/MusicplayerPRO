@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useRef, useEffect } from 'react';
-import API_URL from '../api/config';
+import API_URL from '../config';
 
 const MusicContext = createContext();
 
