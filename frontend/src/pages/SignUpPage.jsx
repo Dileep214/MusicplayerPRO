@@ -35,7 +35,7 @@ const SignUpPage = () => {
 
             if (response.ok) {
                 // Store user data in localStorage for auto-login
-                localStorage.setItem('user', JSON.stringify({ name, email }));
+                localStorage.setItem('user', JSON.stringify(data.user));
                 navigate('/home');
             } else {
                 alert(data.message || 'Something went wrong');

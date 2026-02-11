@@ -12,15 +12,11 @@
     "rewrites": [
         {
             "source": "/assets/(.*)",
-            "destination": "/frontend/assets/$1"
+            "destination": "/assets/$1"
         },
         {
-            "source": "/((?!assets|.*\\.).*)",
-            "destination": "/frontend/index.html"
-        },
-        {
-            "source": "/(.*)",
-            "destination": "/frontend/$1"
+            "source": "/((?!api|uploads|assets|.*\\.).*)",
+            "destination": "/index.html"
         }
     ]
 }

@@ -172,14 +172,20 @@ const MusicLibraryPage = () => {
                 <div className="w-full flex-1 flex flex-col lg:flex-row items-center lg:items-start justify-center gap-8 lg:gap-12 mt-[7px]">
 
                     {/* Left Panel - Transitions between Playlists, All Songs, and Now Playing */}
-                    <div className={`w-full max-w-[435px] ${currentSongId && !showNowPlayingView ? 'h-[510px]' : 'h-[635px]'} transition-all duration-500 ease-in-out backdrop-blur-2xl bg-white/[0.08] border border-white/20 rounded-[28px] shadow-[0_8px_32px_rgba(0,0,0,0.3)] relative overflow-hidden`}>
+                    <div className={`w-full max-w-[435px] ${currentSongId && !showNowPlayingView ? 'h-[510px]' : 'h-[635px]'} transition-all duration-700 ease-[cubic-bezier(0.23,1,0.32,1)] backdrop-blur-2xl bg-white/[0.08] border border-white/20 rounded-[28px] shadow-[0_8px_32px_rgba(0,0,0,0.3)] relative overflow-hidden`}>
 
                         {/* Playlists View */}
-                        <div className={`absolute inset-0 p-5 overflow-y-auto custom-scrollbar transition-all duration-500 ease-in-out ${isAllSongsView || showNowPlayingView || selectedPlaylist?.name === 'Favorite Songs' ? '-translate-x-full opacity-0 scale-95 pointer-events-none' : 'translate-x-0 opacity-100 scale-100'}`}>
+                        <div className={`absolute inset-0 p-5 overflow-y-auto custom-scrollbar transition-all duration-700 ease-[cubic-bezier(0.23,1,0.32,1)] ${isAllSongsView || showNowPlayingView || selectedPlaylist?.name === 'Favorite Songs' ? '-translate-x-full opacity-0 scale-95 pointer-events-none' : 'translate-x-0 opacity-100 scale-100'}`}>
                             <h2 className="text-xl font-bold text-white mb-5 sticky top-0 bg-[#0f0f1a]/50 backdrop-blur-md pt-1 pb-2 z-10">Song playlists</h2>
                             <div className="grid grid-cols-4 gap-x-3 gap-y-5 pb-5">
-                                {playlists.filter(playlist => playlist.name.toLowerCase().includes(searchTerm.toLowerCase())).length > 0 ? (
-                                    playlists.filter(playlist => playlist.name.toLowerCase().includes(searchTerm.toLowerCase())).map((playlist) => (
+                                {playlists.filter(playlist =>
+                                    playlist.name.toLowerCase().includes(searchTerm.toLowerCase()) &&
+                                    playlist.songs && playlist.songs.length > 0
+                                ).length > 0 ? (
+                                    playlists.filter(playlist =>
+                                        playlist.name.toLowerCase().includes(searchTerm.toLowerCase()) &&
+                                        playlist.songs && playlist.songs.length > 0
+                                    ).map((playlist) => (
                                         <MovieCard
                                             key={playlist._id}
                                             movieName={playlist.name}
@@ -189,13 +195,15 @@ const MusicLibraryPage = () => {
                                         />
                                     ))
                                 ) : (
-                                    <p className="col-span-4 text-white/30 text-center text-sm mt-10">Loading playlists...</p>
+                                    <p className="col-span-4 text-white/30 text-center text-sm mt-10">
+                                        {searchTerm ? 'No matching playlists found' : 'No playlists available'}
+                                    </p>
                                 )}
                             </div>
                         </div>
 
                         {/* All Songs / Favorites View (Left Panel) */}
-                        <div className={`absolute inset-0 p-5 flex flex-col transition-all duration-500 ease-in-out ${isAllSongsView || showNowPlayingView || selectedPlaylist?.name === 'Favorite Songs' ? 'translate-x-0 opacity-100 scale-100' : 'translate-x-full opacity-0 scale-95 pointer-events-none'}`}>
+                        <div className={`absolute inset-0 p-5 flex flex-col transition-all duration-700 ease-[cubic-bezier(0.23,1,0.32,1)] ${isAllSongsView || showNowPlayingView || selectedPlaylist?.name === 'Favorite Songs' ? 'translate-x-0 opacity-100 scale-100' : 'translate-x-full opacity-0 scale-95 pointer-events-none'}`}>
                             <div className="flex items-center justify-between mb-5">
                                 <h2 className="text-xl font-bold text-white">
                                     {selectedPlaylist?.name === 'Favorite Songs' || showNowPlayingView ? 'Favorite Songs' : 'All Songs'}
@@ -209,7 +217,7 @@ const MusicLibraryPage = () => {
                                             setSelectedPlaylist(null);
                                         }
                                     }}
-                                    className="text-[10px] text-white/40 hover:text-white transition-colors bg-white/5 px-2.5 py-1 rounded-full border border-white/10"
+                                    className="text-[10px] text-white/40 hover:text-white transition-all duration-300 bg-white/5 px-2.5 py-1 rounded-full border border-white/10 hover:bg-white/10"
                                 >
                                     View Playlists
                                 </button>
@@ -228,6 +236,7 @@ const MusicLibraryPage = () => {
                                             key={song._id}
                                             song={song}
                                             songName={song.title}
+                                            coverImg={song.coverImg}
                                             isActive={String(currentSongId) === String(song._id || song)}
                                             isPlaying={isPlaying && String(currentSongId) === String(song._id || song)}
                                             onClick={() => {
@@ -247,7 +256,7 @@ const MusicLibraryPage = () => {
                     </div>
 
                     {/* Center - MUSIC Text & Clear Filter */}
-                    <div className={`hidden lg:flex flex-col items-center justify-center transition-all duration-500 ${currentSongId ? 'mt-8 lg:mt-[120px]' : 'mt-12 lg:mt-[165px]'} gap-6`}>
+                    <div className={`hidden lg:flex flex-col items-center justify-center transition-all duration-700 ease-[cubic-bezier(0.23,1,0.32,1)] ${currentSongId ? 'mt-8 lg:mt-[120px]' : 'mt-12 lg:mt-[165px]'} gap-6`}>
                         <h1
                             className="font-bold uppercase tracking-[0.2em] text-6xl md:text-7xl select-none whitespace-nowrap"
                             style={{
@@ -267,12 +276,12 @@ const MusicLibraryPage = () => {
                                 setIsAllSongsView(true);
                                 setShowNowPlayingView(false);
                             }}
-                            className={`px-6 py-2 rounded-full border transition-all duration-300 text-sm font-medium flex items-center gap-2 group ${isAllSongsView && !selectedPlaylist && !searchTerm
+                            className={`px-6 py-2 rounded-full border transition-all duration-500 ease-out text-sm font-medium flex items-center gap-2 group ${isAllSongsView && !selectedPlaylist && !searchTerm
                                 ? 'bg-white/20 border-white/40 text-white cursor-default'
                                 : 'bg-white/5 border-white/10 text-white/60 hover:bg-white/10 hover:border-white/20 hover:text-white'
                                 }`}
                         >
-                            <span className={`w-1.5 h-1.5 rounded-full transition-all ${isAllSongsView && !selectedPlaylist && !searchTerm ? 'bg-green-400 shadow-[0_0_8px_rgba(74,222,128,0.5)]' : 'bg-white/20'}`}></span>
+                            <span className={`w-1.5 h-1.5 rounded-full transition-all duration-500 ${isAllSongsView && !selectedPlaylist && !searchTerm ? 'bg-green-400 shadow-[0_0_8px_rgba(74,222,128,0.5)]' : 'bg-white/20'}`}></span>
                             All Songs
                         </button>
 
@@ -289,21 +298,21 @@ const MusicLibraryPage = () => {
                                     setIsAllSongsView(false);
                                 }
                             }}
-                            className={`px-6 py-2 rounded-full border transition-all duration-300 text-sm font-medium flex items-center gap-2 group ${selectedPlaylist?.name === 'Favorite Songs'
+                            className={`px-6 py-2 rounded-full border transition-all duration-500 ease-out text-sm font-medium flex items-center gap-2 group ${selectedPlaylist?.name === 'Favorite Songs'
                                 ? 'bg-red-500/20 border-red-500/40 text-red-500 cursor-default'
                                 : 'bg-white/5 border-white/10 text-white/60 hover:bg-white/10 hover:border-white/20'
                                 }`}
                         >
-                            <Heart className={`w-4 h-4 ${selectedPlaylist?.name === 'Favorite Songs' ? 'fill-current' : 'text-white/20 group-hover:text-red-500'}`} />
+                            <Heart className={`w-4 h-4 transition-all duration-500 ${selectedPlaylist?.name === 'Favorite Songs' ? 'fill-current' : 'text-white/20 group-hover:text-red-500'}`} />
                             Favorites
                         </button>
                     </div>
 
                     {/* Right Panel - Song List & Now Playing */}
-                    <div className={`w-full max-w-[435px] ${currentSongId && !showNowPlayingView ? 'h-[510px]' : 'h-[635px]'} transition-all duration-500 ease-in-out backdrop-blur-2xl bg-white/[0.08] border border-white/20 rounded-[28px] shadow-[0_8px_32px_rgba(0,0,0,0.3)] relative overflow-hidden mt-[0px]`}>
+                    <div className={`w-full max-w-[435px] ${currentSongId && !showNowPlayingView ? 'h-[510px]' : 'h-[635px]'} transition-all duration-700 ease-[cubic-bezier(0.23,1,0.32,1)] backdrop-blur-2xl bg-white/[0.08] border border-white/20 rounded-[28px] shadow-[0_8px_32px_rgba(0,0,0,0.3)] relative overflow-hidden mt-[0px]`}>
 
                         {/* Song List View */}
-                        <div className={`absolute inset-0 p-5 flex flex-col transition-all duration-500 ease-in-out ${showNowPlayingView ? 'translate-x-[100%] opacity-0 scale-95 pointer-events-none' : 'translate-x-0 opacity-100 scale-100'}`}>
+                        <div className={`absolute inset-0 p-5 flex flex-col transition-all duration-700 ease-[cubic-bezier(0.23,1,0.32,1)] ${showNowPlayingView ? 'translate-x-[100%] opacity-0 scale-95 pointer-events-none' : 'translate-x-0 opacity-100 scale-100'}`}>
 
                             {/* Panel Header */}
                             {/* Panel Header code updated to include Date & Time */}

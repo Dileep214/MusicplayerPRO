@@ -33,7 +33,14 @@ router.post('/signup', async (req, res) => {
         // 5. Save to DB
         await newUser.save();
 
-        res.status(201).json({ message: 'User registered successfully' });
+        res.status(201).json({
+            message: 'User registered successfully',
+            user: {
+                id: newUser._id,
+                name: newUser.name,
+                email: newUser.email
+            }
+        });
 
     } catch (err) {
         console.error(err);
