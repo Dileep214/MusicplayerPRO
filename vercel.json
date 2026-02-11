@@ -1,11 +1,6 @@
 {
     "version": 2,
-    "public": false,
     "builds": [
-        {
-            "src": "backend/index.js",
-            "use": "@vercel/node"
-        },
         {
             "src": "frontend/package.json",
             "use": "@vercel/static-build",
@@ -16,20 +11,16 @@
     ],
     "rewrites": [
         {
-            "source": "/api/(.*)",
-            "destination": "/backend/index.js"
+            "source": "/assets/(.*)",
+            "destination": "/frontend/assets/$1"
         },
         {
-            "source": "/uploads/(.*)",
-            "destination": "/backend/index.js"
+            "source": "/((?!assets|.*\\.).*)",
+            "destination": "/frontend/index.html"
         },
         {
             "source": "/(.*)",
             "destination": "/frontend/$1"
         }
-    ],
-    "regions": [
-        "cle1",
-        "syd1"
     ]
 }
