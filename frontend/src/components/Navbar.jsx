@@ -64,11 +64,7 @@ const Navbar = () => {
                     <button className="md:hidden p-2 text-white bg-white/5 rounded-lg border border-white/10">
                         <LayoutDashboard className="w-5 h-5" />
                     </button>
-                    {location.pathname === '/' ? (
-                        <Link to="/signup" className="px-6 py-2.5 rounded-xl bg-white text-[#0f0f1a] text-sm font-bold hover:bg-gray-200 transition-colors">
-                            Sign Up
-                        </Link>
-                    ) : (
+                    {user ? (
                         <Link
                             to="/login"
                             onClick={() => localStorage.removeItem('user')}
@@ -76,6 +72,16 @@ const Navbar = () => {
                         >
                             Logout
                         </Link>
+                    ) : (
+                        location.pathname === '/' ? (
+                            <Link to="/signup" className="px-6 py-2.5 rounded-xl bg-white text-[#0f0f1a] text-sm font-bold hover:bg-gray-200 transition-colors">
+                                Sign Up
+                            </Link>
+                        ) : (
+                            <Link to="/login" className="px-6 py-2.5 rounded-xl bg-white text-[#0f0f1a] text-sm font-bold hover:bg-gray-200 transition-colors">
+                                Sign In
+                            </Link>
+                        )
                     )}
                 </div>
             </div>

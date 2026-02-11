@@ -2,6 +2,8 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 
 const Hero = () => {
+    const user = localStorage.getItem('user');
+
     return (
         <main className="flex flex-col items-center justify-center h-full px-4 text-center">
 
@@ -21,8 +23,11 @@ const Hero = () => {
                 To experience the Quality of the music
             </p>
 
-            <Link to="/login" className="mt-12 px-10 py-3 bg-white text-black rounded-full font-bold text-base md:text-lg hover:bg-gray-100 transition-all transform hover:scale-105 active:scale-95 cursor-pointer shadow-[0_0_20px_rgba(255,255,255,0.3)]">
-                Sign in
+            <Link
+                to={user ? "/library" : "/login"}
+                className="mt-12 px-10 py-3 bg-white text-black rounded-full font-bold text-base md:text-lg hover:bg-gray-100 transition-all transform hover:scale-105 active:scale-95 cursor-pointer shadow-[0_0_20px_rgba(255,255,255,0.3)]"
+            >
+                {user ? "Go to Library" : "Sign in"}
             </Link>
         </main>
     );
