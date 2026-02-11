@@ -4,7 +4,7 @@ const cors = require('cors');
 require('dotenv').config();
 
 const app = express();
-const port = process.env.PORT || 3000;
+
 
 const authRoutes = require('./routes/auth');
 const songRoutes = require('./routes/songs');
@@ -40,10 +40,11 @@ app.get('/', (req, res) => {
     res.send('MusicPlayerPRO Backend is running!');
 });
 
-if (process.env.NODE_ENV !== 'production') {
-    app.listen(port, () => {
-        console.log(`🚀 Server is running on port ${port}`);
-    });
-}
+const PORT = process.env.PORT || 5000;
+
+app.listen(PORT, () => {
+    console.log(`Server is running on port ${PORT}`);
+});
+
 
 module.exports = app;
