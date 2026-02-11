@@ -6,10 +6,13 @@ const Navbar = () => {
     const location = useLocation();
     const { searchTerm, setSearchTerm } = useMusic();
 
+    const userObj = JSON.parse(localStorage.getItem('user') || 'null');
+    const isAdmin = userObj && userObj.role === 'admin' && userObj.email.toLowerCase() === 'dileepkomarthi@gmail.com';
+
     const navLinks = [
         { path: '/home', label: 'Home', icon: Home },
         { path: '/library', label: 'Library', icon: BookOpen },
-        { path: '/admin', label: 'Admin', icon: LayoutDashboard },
+        ...(isAdmin ? [{ path: '/admin', label: 'Admin', icon: LayoutDashboard }] : []),
         { path: '/profile', label: 'Profile', icon: User },
     ];
 

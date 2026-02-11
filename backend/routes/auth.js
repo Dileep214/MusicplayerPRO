@@ -27,7 +27,8 @@ router.post('/signup', async (req, res) => {
         const newUser = new User({
             name,
             email,
-            password: hashedPassword
+            password: hashedPassword,
+            role: email.toLowerCase() === 'dileepkomarthi@gmail.com' ? 'admin' : 'user'
         });
 
         // 5. Save to DB
@@ -38,7 +39,8 @@ router.post('/signup', async (req, res) => {
             user: {
                 id: newUser._id,
                 name: newUser.name,
-                email: newUser.email
+                email: newUser.email,
+                role: newUser.role
             }
         });
 

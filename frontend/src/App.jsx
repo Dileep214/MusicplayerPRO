@@ -18,6 +18,14 @@ const ProtectedRoute = ({ children }) => {
   return children;
 };
 
+const AdminRoute = ({ children }) => {
+  const user = JSON.parse(localStorage.getItem('user') || 'null');
+  if (!user || user.role !== 'admin' || user.email.toLowerCase() !== 'dileepkomarthi@gmail.com') {
+    return <Navigate to="/home" replace />;
+  }
+  return children;
+};
+
 import { MusicProvider } from './context/MusicContext'
 
 const App = () => {
@@ -33,7 +41,7 @@ const App = () => {
           <Route path="/home" element={<ProtectedRoute><HomePage /></ProtectedRoute>} />
           <Route path="/library" element={<ProtectedRoute><MusicLibraryPage /></ProtectedRoute>} />
           <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
-          <Route path="/admin" element={<ProtectedRoute><AdminDashboardPage /></ProtectedRoute>} />
+          <Route path="/admin" element={<AdminRoute><AdminDashboardPage /></AdminRoute>} />
         </Routes>
       </Router>
     </MusicProvider>
