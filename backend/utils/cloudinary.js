@@ -13,6 +13,9 @@ cloudinary.config({
     api_secret: (process.env.CLOUDINARY_API_SECRET || '').trim()
 });
 
+const apiKey = process.env.CLOUDINARY_API_KEY || '';
+console.log(`☁️ Cloudinary initialized with API Key: ${apiKey.slice(0, 3)}...${apiKey.slice(-3)}`);
+
 // Create Dynamic Storage
 const dynamicStorage = new CloudinaryStorage({
     cloudinary: cloudinary,
