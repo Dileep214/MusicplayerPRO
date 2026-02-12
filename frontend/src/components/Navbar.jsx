@@ -30,8 +30,8 @@ const Navbar = () => {
                     <span className="text-xl font-black tracking-tighter text-white">PRO<span className="text-green-500">MUSIC</span></span>
                 </Link>
 
-                {/* Search Bar - Only for logged in users */}
-                {user && (
+                {/* Search Bar - Only for logged in users on Library Page */}
+                {user && location.pathname === '/library' && (
                     <div className="flex-1 max-w-md relative group hidden sm:block">
                         <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40 group-focus-within:text-green-500 transition-colors" />
                         <input

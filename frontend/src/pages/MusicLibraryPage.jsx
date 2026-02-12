@@ -51,8 +51,11 @@ const MusicLibraryPage = () => {
 
     useEffect(() => {
         const timer = setInterval(() => setDateTime(new Date()), 1000);
-        return () => clearInterval(timer);
-    }, []);
+        return () => {
+            clearInterval(timer);
+            setSearchTerm(''); // Clear search when leaving
+        };
+    }, [setSearchTerm]);
 
     // Generate static waveform bars for the visualizer
     const bars = Array.from({ length: 40 }, (_, i) => ({
