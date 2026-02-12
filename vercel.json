@@ -11,11 +11,11 @@
     ],
     "rewrites": [
         {
-            "source": "/assets/(.*)",
-            "destination": "/assets/$1"
+            "source": "/((?!assets|uploads|api|.*\\.).*)",
+            "destination": "/index.html"
         },
         {
-            "source": "/((?!api|uploads|assets|.*\\.).*)",
+            "source": "/(.*)",
             "destination": "/index.html"
         }
     ]
