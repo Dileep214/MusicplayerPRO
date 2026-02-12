@@ -4,8 +4,10 @@ import Navbar from '../components/Navbar';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import API_URL from '../config';
+import { useMusic } from '../context/MusicContext';
 
 const ProfilePage = () => {
+    const { formatUrl } = useMusic();
     const navigate = useNavigate();
     const userData = JSON.parse(localStorage.getItem('user') || '{}');
     const [name, setName] = useState(userData.name || '');
@@ -104,7 +106,7 @@ const ProfilePage = () => {
                                 <div className="w-28 h-28 md:w-32 md:h-32 rounded-full bg-gradient-to-tr from-white/20 via-white/10 to-transparent border-2 border-white/30 flex items-center justify-center shadow-2xl transition-transform duration-500 group-hover:scale-105 overflow-hidden">
                                     {profilePhoto ? (
                                         <img
-                                            src={profilePhoto}
+                                            src={formatUrl(profilePhoto)}
                                             alt="Profile"
                                             className="w-full h-full object-cover"
                                         />

@@ -16,12 +16,15 @@ const LoginPage = () => {
 
     const { email, password } = formData;
 
+    const [loading, setLoading] = useState(false);
+
     const handleChange = (e) => {
         setFormData({ ...formData, [e.target.id]: e.target.value });
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        setLoading(true);
         try {
             const response = await fetch(`${API_URL}/api/auth/login`, {
                 method: 'POST',
@@ -30,7 +33,16 @@ const LoginPage = () => {
                 },
                 body: JSON.stringify(formData)
             });
-            const data = await response.json();
+
+            // Check if response is JSON
+            const contentType = response.headers.get("content-type");
+            let data;
+            if (contentType && contentType.indexOf("application/json") !== -1) {
+                data = await response.json();
+            } else {
+                const text = await response.text();
+                throw new Error(`Server returned non-JSON response: ${response.status} ${response.statusText}`);
+            }
 
             if (response.ok) {
                 // Store user data in localStorage
@@ -41,7 +53,13 @@ const LoginPage = () => {
             }
         } catch (error) {
             console.error('Login Error:', error);
-            alert('Failed to connect to the server.');
+            if (error.message.includes('404')) {
+                alert('Server endpoint not found (404). Please try again in a moment as the server might be waking up.');
+            } else {
+                alert('Failed to connect to the server. The backend might be starting up (Cold Start). Please wait 30-60 seconds and try again.');
+            }
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -82,8 +100,8 @@ const LoginPage = () => {
                             onChange={handleChange}
                         />
 
-                        <Button type="submit">
-                            Sign In
+                        <Button type="submit" disabled={loading}>
+                            {loading ? 'Signing in...' : 'Sign In'}
                         </Button>
                     </form>
 

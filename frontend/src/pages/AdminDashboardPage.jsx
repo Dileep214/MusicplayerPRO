@@ -16,8 +16,10 @@ import AddAlbumModal from '../components/AddAlbumModal';
 import Navbar from '../components/Navbar';
 import BackgroundWrapper from '../components/BackgroundWrapper';
 import API_URL from '../config';
+import { useMusic } from '../context/MusicContext';
 
 const AdminDashboardPage = () => {
+    const { formatUrl } = useMusic();
     const [stats, setStats] = useState({
         totalSongs: 0,
         totalAlbums: 0,
@@ -162,7 +164,7 @@ const AdminDashboardPage = () => {
                                         <tr key={song._id} className="border-b border-white/5 hover:bg-white/[0.02] transition-colors group">
                                             <td className="px-6 py-4">
                                                 <div className="flex items-center gap-3">
-                                                    <img src={song.coverImg} alt="" className="w-10 h-10 rounded-lg object-cover shadow-lg" />
+                                                    <img src={formatUrl(song.coverImg)} alt="" className="w-10 h-10 rounded-lg object-cover shadow-lg" />
                                                     <span className="font-medium text-white group-hover:text-green-400 transition-colors">{song.title}</span>
                                                 </div>
                                             </td>
@@ -204,7 +206,7 @@ const AdminDashboardPage = () => {
                                         <tr key={album._id} className="border-b border-white/5 hover:bg-white/[0.02] transition-colors group">
                                             <td className="px-6 py-4">
                                                 <div className="flex items-center gap-3">
-                                                    <img src={album.coverImg} alt="" className="w-10 h-10 rounded-lg object-cover shadow-lg" />
+                                                    <img src={formatUrl(album.coverImg)} alt="" className="w-10 h-10 rounded-lg object-cover shadow-lg" />
                                                     <span className="font-medium text-white group-hover:text-green-400 transition-colors">{album.title}</span>
                                                 </div>
                                             </td>

@@ -147,15 +147,28 @@ export const MusicProvider = ({ children }) => {
         };
     }, [currentSongId, songs, repeatMode, isShuffle, selectedPlaylist]);
 
+    const formatUrl = (url) => {
+        if (!url) return url;
+        if (typeof url !== 'string') return url;
+        if (url.startsWith('http')) return url;
+        // Fix for Cloudinary paths that might not start with http but aren't local uploads
+        if (url.startsWith('MusicPlayerPRO')) return `https://res.cloudinary.com/${process.env.CLOUDINARY_CLOUD_NAME || 'dzp9rltpr'}/video/upload/${url}`;
+
+        // Prefix relative paths with API_URL
+        const baseUrl = API_URL.endsWith('/') ? API_URL.slice(0, -1) : API_URL;
+        return `${baseUrl}${url.startsWith('/') ? '' : '/'}${url}`;
+    };
+
     useEffect(() => {
         if (currentSong && currentSong.audioUrl) {
-            if (audioRef.current.src !== currentSong.audioUrl) {
-                audioRef.current.src = currentSong.audioUrl;
+            const absoluteAudioUrl = formatUrl(currentSong.audioUrl);
+            if (audioRef.current.src !== absoluteAudioUrl) {
+                audioRef.current.src = absoluteAudioUrl;
                 audioRef.current.load();
                 if (isPlaying) audioRef.current.play().catch(console.error);
             }
         }
-    }, [currentSong]);
+    }, [currentSong, isPlaying]);
 
     useEffect(() => {
         audioRef.current.volume = volume;
@@ -243,6 +256,7 @@ export const MusicProvider = ({ children }) => {
             filteredSongs,
             favorites, setFavorites,
             toggleFavorite,
+            formatUrl,
             togglePlay, handleNext, handlePrevious, handleSeek, skipForward, skipBackward
         }}>
             {children}

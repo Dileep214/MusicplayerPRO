@@ -23,7 +23,8 @@ const MusicPlayer = () => {
         setSelectedPlaylist,
         setIsAllSongsView,
         setSearchTerm,
-        showNowPlayingView
+        showNowPlayingView,
+        formatUrl
     } = useMusic();
 
     const navigate = useNavigate();
@@ -53,7 +54,7 @@ const MusicPlayer = () => {
                 >
                     <div className="w-10 h-10 rounded-lg bg-white/10 overflow-hidden border border-white/10 flex-shrink-0 relative">
                         {currentSong?.coverImg ? (
-                            <img src={currentSong.coverImg} alt="" className="w-full h-full object-cover" />
+                            <img src={formatUrl(currentSong.coverImg)} alt="" className="w-full h-full object-cover" />
                         ) : (
                             <div className="w-full h-full bg-white/5" />
                         )}

@@ -25,7 +25,7 @@ const HomePage = () => {
                             textShadow: '0 6px 18px rgba(0, 0, 0, 0.45)'
                         }}
                     >
-                        Hi {userName}
+                        Hi! {userName}
                     </h1>
 
                     <p className="text-lg md:text-xl text-white/90 font-light tracking-wide mb-8">

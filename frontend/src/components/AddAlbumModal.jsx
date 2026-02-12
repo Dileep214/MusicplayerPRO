@@ -52,16 +52,27 @@ const AddAlbumModal = ({ isOpen, onClose, onAlbumAdded }) => {
         data.append('releaseDate', formData.releaseDate);
         if (coverImgFile) data.append('coverImgFile', coverImgFile);
 
-        // Append all songs
+        // Append only audio files
+        const audioExtensions = ['.mp3', '.wav', '.ogg', '.m4a', '.flac'];
+        let addedSongs = 0;
         songFiles.forEach(file => {
-            data.append('songFiles', file);
+            const ext = '.' + file.name.split('.').pop().toLowerCase();
+            if (audioExtensions.includes(ext)) {
+                data.append('songFiles', file);
+                addedSongs++;
+            }
         });
+
+        if (addedSongs === 0) {
+            alert('No valid audio files found in the selection.');
+            setLoading(false);
+            return;
+        }
 
         try {
             const response = await axios.post(`${API_URL}/api/albums`, data, {
-                headers: {
-                    'Content-Type': 'multipart/form-data'
-                }
+                // Remove manual Content-Type header, axios handles it better with FormData
+                timeout: 300000 // 5 minutes timeout for large uploads
             });
             onAlbumAdded(response.data);
             onClose();
@@ -72,11 +83,13 @@ const AddAlbumModal = ({ isOpen, onClose, onAlbumAdded }) => {
             });
             setCoverImgFile(null);
             setSongFiles([]);
+            alert('Album uploaded successfully!');
         } catch (error) {
             console.error('Error adding album:', error);
             const message = error.response?.data?.message || 'Failed to add album';
             const details = error.response?.data?.error || '';
-            alert(`${message}\n${details}`);
+            const status = error.response?.status || 'Unknown status';
+            alert(`Error ${status}: ${message}\n${details}\n\nHint: If it's a timeout, try uploading fewer songs at once.`);
         } finally {
             setLoading(false);
         }

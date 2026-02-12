@@ -3,7 +3,7 @@ import { Heart } from 'lucide-react';
 import { useMusic } from '../context/MusicContext';
 
 const SongItem = ({ song, songName, coverImg, onClick, isActive = false }) => {
-    const { favorites, toggleFavorite } = useMusic();
+    const { favorites, toggleFavorite, formatUrl } = useMusic();
     const isFavorite = favorites.some(id => String(id) === String(song?._id || song));
 
     return (
@@ -17,7 +17,7 @@ const SongItem = ({ song, songName, coverImg, onClick, isActive = false }) => {
             {/* Song thumbnail */}
             <div
                 className={`w-11 h-11 rounded-xl bg-cover bg-center flex-shrink-0 bg-white/10 transition-all duration-700 ease-[cubic-bezier(0.23,1,0.32,1)] ${isActive ? 'scale-110 shadow-lg border border-white/20' : 'group-hover:scale-105 group-hover:shadow-md'}`}
-                style={{ backgroundImage: coverImg ? `url(${coverImg})` : 'none' }}
+                style={{ backgroundImage: coverImg ? `url(${formatUrl(coverImg)})` : 'none' }}
             ></div>
 
             {/* Song details */}

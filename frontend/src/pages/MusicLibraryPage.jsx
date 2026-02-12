@@ -27,7 +27,8 @@ const MusicLibraryPage = () => {
         isShuffle, setIsShuffle,
         repeatMode, setRepeatMode,
         volume, setVolume,
-        favorites, toggleFavorite
+        favorites, toggleFavorite,
+        formatUrl
     } = useMusic();
 
     const formatTime = (time) => {
@@ -189,7 +190,7 @@ const MusicLibraryPage = () => {
                                         <MovieCard
                                             key={playlist._id}
                                             movieName={playlist.name}
-                                            imageUrl={playlist.imageUrl || playlist.coverImg}
+                                            imageUrl={formatUrl(playlist.imageUrl || playlist.coverImg)}
                                             isActive={selectedPlaylist && String(selectedPlaylist._id || selectedPlaylist) === String(playlist._id || playlist)}
                                             onClick={() => handlePlaylistClick(playlist)}
                                         />
@@ -341,7 +342,7 @@ const MusicLibraryPage = () => {
                             <div className="mb-4 flex justify-center">
                                 <div
                                     className="relative w-full max-w-[180px] aspect-square rounded-[24px] bg-cover bg-center backdrop-blur-sm border border-white/15 overflow-hidden shadow-lg transition-all duration-500"
-                                    style={{ backgroundImage: currentSong?.coverImg ? `url(${currentSong.coverImg})` : 'none' }}
+                                    style={{ backgroundImage: currentSong?.coverImg ? `url(${formatUrl(currentSong.coverImg)})` : 'none' }}
                                 >
                                     {!currentSong?.coverImg && (
                                         <div className="absolute inset-0 flex items-center justify-center p-4">
@@ -427,7 +428,7 @@ const MusicLibraryPage = () => {
                             <div className="w-full aspect-square max-w-[190px] rounded-[28px] mb-4 overflow-hidden shadow-2xl bg-white/5 border border-white/10 flex items-center justify-center group relative transition-transform duration-500 hover:scale-[1.02]">
                                 {currentSong?.coverImg ? (
                                     <img
-                                        src={currentSong.coverImg}
+                                        src={formatUrl(currentSong.coverImg)}
                                         alt={currentSong.title}
                                         className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
                                     />

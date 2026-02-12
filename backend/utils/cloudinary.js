@@ -3,10 +3,14 @@ const { CloudinaryStorage } = require('multer-storage-cloudinary');
 const multer = require('multer');
 
 // Configure Cloudinary
+if (!process.env.CLOUDINARY_CLOUD_NAME || !process.env.CLOUDINARY_API_KEY || !process.env.CLOUDINARY_API_SECRET) {
+    console.error('❌ Cloudinary Error: Missing credentials in .env file!');
+}
+
 cloudinary.config({
-    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-    api_key: process.env.CLOUDINARY_API_KEY,
-    api_secret: process.env.CLOUDINARY_API_SECRET
+    cloud_name: (process.env.CLOUDINARY_CLOUD_NAME || '').trim(),
+    api_key: (process.env.CLOUDINARY_API_KEY || '').trim(),
+    api_secret: (process.env.CLOUDINARY_API_SECRET || '').trim()
 });
 
 // Create Dynamic Storage
@@ -38,7 +42,10 @@ const dynamicStorage = new CloudinaryStorage({
 
 const upload = multer({
     storage: dynamicStorage,
-    limits: { fileSize: 50 * 1024 * 1024 } // 50MB global limit, can be refined per route
+    limits: {
+        fileSize: 100 * 1024 * 1024, // 100MB per file
+        fieldSize: 100 * 1024 * 1024 // 100MB for non-file fields
+    }
 });
 
 module.exports = {

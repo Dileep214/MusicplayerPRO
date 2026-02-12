@@ -54,35 +54,35 @@ router.post('/', (req, res, next) => {
 
         // Handle Songs if any
         if (req.files && req.files['songFiles']) {
-            const songIds = [];
+            console.log(`Processing ${req.files['songFiles'].length} songs for album: ${title}`);
 
-            for (const file of req.files['songFiles']) {
-                // Create a Song record for each file
-                // We'll use the filename (without extension) as the title
+            const songsToInsert = req.files['songFiles'].map(file => {
                 const songTitle = file.originalname.split('.').slice(0, -1).join('.').replace(/_/g, ' ');
-
-                const newSong = new Song({
+                return {
                     title: songTitle,
-                    artist: artist, // Link to album artist by default
+                    artist: artist,
                     album: title,
                     audioUrl: file.path,
-                    coverImg: coverImg, // Use album cover as song cover
-                    duration: "3:30", // Placeholder duration
+                    coverImg: coverImg,
+                    duration: "3:30",
                     category: "Album Track"
-                });
+                };
+            });
 
-                const savedSong = await newSong.save();
-                songIds.push(savedSong._id);
-            }
-
-            newAlbum.songs = songIds;
+            const savedSongs = await Song.insertMany(songsToInsert);
+            newAlbum.songs = savedSongs.map(s => s._id);
         }
 
         await newAlbum.save();
+        console.log(`✅ Album created successfully: ${title}`);
         res.status(201).json(newAlbum);
     } catch (err) {
         console.error('Bulk Album Upload Error:', err);
-        res.status(500).json({ message: 'Error uploading album and songs locally', error: err.message });
+        res.status(500).json({
+            message: 'Error uploading album and songs',
+            error: err.message,
+            stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
+        });
     }
 });
 
