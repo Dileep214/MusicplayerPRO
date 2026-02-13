@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useCallback, useMemo } from 'react';
 import BackgroundWrapper from '../components/BackgroundWrapper';
 import Navbar from '../components/Navbar';
 import { useNavigate } from 'react-router-dom';
@@ -6,36 +6,34 @@ import axios from 'axios';
 import API_URL from '../config';
 import { useMusic } from '../context/MusicContext';
 
-const ProfilePage = () => {
+const ProfilePage = React.memo(() => {
     const { formatUrl } = useMusic();
     const navigate = useNavigate();
-    const userData = JSON.parse(localStorage.getItem('user') || '{}');
-    const [name, setName] = useState(userData.name || '');
-    const [email, setEmail] = useState(userData.email || '');
+
+    const userData = useMemo(() => JSON.parse(localStorage.getItem('user') || '{}'), []);
+
     const [profilePhoto, setProfilePhoto] = useState(userData.profilePhoto || null);
     const [uploading, setUploading] = useState(false);
     const fileInputRef = useRef(null);
 
-    const handleLogout = () => {
+    const handleLogout = useCallback(() => {
         localStorage.removeItem('user');
         navigate('/');
-    };
+    }, [navigate]);
 
-    const handlePhotoClick = () => {
+    const handlePhotoClick = useCallback(() => {
         fileInputRef.current?.click();
-    };
+    }, []);
 
-    const handlePhotoChange = async (e) => {
+    const handlePhotoChange = useCallback(async (e) => {
         const file = e.target.files?.[0];
         if (!file) return;
 
-        // Validate file type
         if (!file.type.startsWith('image/')) {
             alert('Please select an image file');
             return;
         }
 
-        // Validate file size (5MB)
         if (file.size > 5 * 1024 * 1024) {
             alert('File size must be less than 5MB');
             return;
@@ -57,50 +55,39 @@ const ProfilePage = () => {
             const newPhotoUrl = response.data.profilePhoto;
             setProfilePhoto(newPhotoUrl);
 
-            // Update localStorage
             const updatedUser = { ...userData, profilePhoto: newPhotoUrl };
             localStorage.setItem('user', JSON.stringify(updatedUser));
 
             alert('Profile photo updated successfully!');
         } catch (error) {
             console.error('Error uploading photo:', error);
-            console.error('Error response:', error.response?.data);
-            console.error('Error status:', error.response?.status);
             const errorMsg = error.response?.data?.message || error.message || 'Unknown error occurred';
             alert(`Failed to upload photo: ${errorMsg}`);
         } finally {
             setUploading(false);
         }
-    };
+    }, [userData]);
+
+    const userInitial = useMemo(() =>
+        (userData.name || 'U').charAt(0).toUpperCase(),
+        [userData.name]
+    );
 
     return (
         <BackgroundWrapper>
-            {/* Layer 1: Fullscreen Background has flex centering provided by this wrapper div */}
             <div className="w-full h-full flex flex-col items-center justify-center p-4 md:p-8">
-
                 <Navbar />
 
-                {/* 
-                    Layer 2: App Container 
-                    - Managed size: full width on mobile, capped on desktop
-                    - Fixed max-height with internal scrolling
-                    - Glassmorphism effect
-                */}
                 <div className="relative mt-8 w-full max-w-[95%] md:max-w-7xl max-h-[75vh] 
                     backdrop-blur-3xl bg-white/[0.06] border border-white/20 rounded-[40px] 
                     shadow-[0_24px_80px_rgba(0,0,0,0.5)] flex flex-col overflow-hidden"
                 >
-
-                    {/* Internal Scrollable Content */}
                     <div className="flex-1 overflow-y-auto p-6 md:p-8 space-y-6 custom-scrollbar">
-
-                        {/* Header Section */}
                         <div className="text-center space-y-2">
                             <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-white">Settings</h1>
                             <p className="text-white/50 text-sm md:text-base">Manage your account and app preferences</p>
                         </div>
 
-                        {/* Profile Photo Section */}
                         <div className="flex flex-col items-center group">
                             <div className="relative pointer-events-auto">
                                 <div className="w-28 h-28 md:w-32 md:h-32 rounded-full bg-gradient-to-tr from-white/20 via-white/10 to-transparent border-2 border-white/30 flex items-center justify-center shadow-2xl transition-transform duration-500 group-hover:scale-105 overflow-hidden">
@@ -109,10 +96,11 @@ const ProfilePage = () => {
                                             src={formatUrl(profilePhoto)}
                                             alt="Profile"
                                             className="w-full h-full object-cover"
+                                            loading="lazy"
                                         />
                                     ) : (
                                         <span className="text-4xl md:text-5xl font-bold text-white selection:bg-transparent">
-                                            {name.charAt(0).toUpperCase() || 'U'}
+                                            {userInitial}
                                         </span>
                                     )}
                                 </div>
@@ -142,14 +130,13 @@ const ProfilePage = () => {
                             </div>
                         </div>
 
-                        {/* User Inputs Section */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div className="space-y-2">
                                 <label className="block text-white/40 text-xs uppercase tracking-widest font-bold ml-1">Name</label>
                                 <input
                                     readOnly
                                     type="text"
-                                    value={name}
+                                    value={userData.name || 'Guest'}
                                     className="w-full px-5 py-4 rounded-2xl bg-white/[0.04] border border-white/5 text-white/50 cursor-not-allowed font-medium select-none"
                                 />
                             </div>
@@ -158,16 +145,14 @@ const ProfilePage = () => {
                                 <input
                                     readOnly
                                     type="email"
-                                    value={email}
+                                    value={userData.email || ''}
                                     className="w-full px-5 py-4 rounded-2xl bg-white/[0.04] border border-white/5 text-white/50 cursor-not-allowed font-medium select-none"
                                 />
                             </div>
                         </div>
 
-                        {/* App Settings Section */}
                         <div className="space-y-4 pt-4">
                             <h3 className="text-white/40 text-xs uppercase tracking-widest font-bold ml-1">Privacy & Playback</h3>
-
                             <div className="space-y-3">
                                 {[
                                     { id: 'notif', label: 'Push Notifications', desc: 'Alerts for new releases and features', checked: true },
@@ -189,7 +174,6 @@ const ProfilePage = () => {
                         </div>
                     </div>
 
-                    {/* Bottom Action Bar: Fixed inside container */}
                     <div className="p-8 md:p-10 bg-white/[0.02] border-t border-white/10 flex flex-col md:flex-row gap-4">
                         <button className="flex-1 px-8 py-4 bg-white text-black rounded-2xl font-bold hover:bg-white/90 hover:scale-[1.02] active:scale-95 transition-all shadow-[0_0_30px_rgba(255,255,255,0.15)]">
                             Save Changes
@@ -201,11 +185,10 @@ const ProfilePage = () => {
                             Log Out
                         </button>
                     </div>
-
                 </div>
             </div>
         </BackgroundWrapper>
     );
-};
+});
 
 export default ProfilePage;

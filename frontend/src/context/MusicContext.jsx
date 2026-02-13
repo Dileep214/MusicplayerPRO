@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useRef, useEffect } from 'react';
+import React, { createContext, useContext, useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import API_URL from '../config';
 
 const MusicContext = createContext();
@@ -22,10 +22,13 @@ export const MusicProvider = ({ children }) => {
 
     const audioRef = useRef(new Audio());
 
-    const currentSong = songs.find(s => String(s._id || s) === String(currentSongId)) || null;
+    const currentSong = useMemo(() =>
+        songs.find(s => String(s._id || s) === String(currentSongId)) || null,
+        [songs, currentSongId]
+    );
 
-    // Filter logic moved here for global access
-    const filteredSongs = (() => {
+    // Optimized Filter logic with useMemo
+    const filteredSongs = useMemo(() => {
         let baseSongs = songs;
         if (selectedPlaylist) {
             if (selectedPlaylist.name === 'Favorite Songs') {
@@ -40,41 +43,51 @@ export const MusicProvider = ({ children }) => {
             }
         }
 
+        const search = String(searchTerm || '').toLowerCase();
+        if (!search) return baseSongs;
+
         return baseSongs.filter(song => {
             if (!song || typeof song !== 'object') return false;
             const title = String(song.title || '').toLowerCase();
             const artist = String(song.artist || '').toLowerCase();
-            const search = String(searchTerm || '').toLowerCase();
             return title.includes(search) || artist.includes(search);
         });
-    })();
+    }, [songs, selectedPlaylist, favorites, searchTerm]);
 
     useEffect(() => {
         const fetchFavorites = async () => {
-            const user = JSON.parse(localStorage.getItem('user'));
-            if (user && user.id) {
-                try {
-                    const response = await fetch(`${API_URL}/api/user/favorites/${user.id}`);
-                    if (response.ok) {
-                        const data = await response.json();
-                        setFavorites(data.map(f => String(f._id || f)));
+            try {
+                const userString = localStorage.getItem('user');
+                const user = userString ? JSON.parse(userString) : null;
+                if (user && user.id) {
+                    try {
+                        const response = await fetch(`${API_URL}/api/user/favorites/${user.id}`);
+                        if (response.ok) {
+                            const data = await response.json();
+                            setFavorites(data.map(f => String(f._id || f)));
+                        }
+                    } catch (err) {
+                        console.error('Error fetching favorites:', err);
                     }
-                } catch (err) {
-                    console.error('Error fetching favorites:', err);
                 }
+            } catch (e) {
+                console.error('Failed to parse user for favorites:', e);
             }
         };
         fetchFavorites();
     }, []);
 
-    const toggleFavorite = async (songId) => {
-        const user = JSON.parse(localStorage.getItem('user'));
+    const toggleFavorite = useCallback(async (songId) => {
+        let user = null;
+        try {
+            user = JSON.parse(localStorage.getItem('user'));
+        } catch (e) {
+            console.error('Failed to parse user session:', e);
+        }
 
-        // Critical Fix: Ensure user HAS an ID. If only name/email exist (from old signup flow), force re-login.
         if (!user || !user.id) {
             alert('Your session is incomplete. Please log in again to use Favorites.');
             localStorage.removeItem('user');
-            // Check if we can navigate, otherwise use window location
             window.location.href = '/login';
             return;
         }
@@ -82,7 +95,6 @@ export const MusicProvider = ({ children }) => {
         const safeId = String(songId);
         const previousFavorites = [...favorites];
 
-        // Optimistic UI update: Immediate visual feedback
         setFavorites(prev => {
             if (prev.includes(safeId)) {
                 return prev.filter(id => id !== safeId);
@@ -101,29 +113,20 @@ export const MusicProvider = ({ children }) => {
             if (response.ok) {
                 const data = await response.json();
                 const newFavs = data.favorites.map(id => String(id));
-                // Sync with server state
                 setFavorites(newFavs);
             } else {
-                // Revert state on error
                 setFavorites(previousFavorites);
-
                 if (response.status === 404) {
                     alert('Session expired. Please login again.');
                     localStorage.removeItem('user');
                     window.location.href = '/login';
-                    return;
                 }
-                const text = await response.text();
-                console.error('Toggle favorite failed:', text);
-                alert('Could not update favorites. Try logging in again.');
             }
         } catch (err) {
-            // Revert state on network error
             setFavorites(previousFavorites);
             console.error('Error toggling favorite:', err);
-            alert('Network error. Check your connection.');
         }
-    };
+    }, [favorites]);
 
     useEffect(() => {
         const audio = audioRef.current;
@@ -134,7 +137,14 @@ export const MusicProvider = ({ children }) => {
             }
         };
         const handleLoadedMetadata = () => setDuration(audio.duration);
-        const handleEnded = () => handleNext(repeatMode === 'none' && !isShuffle);
+
+        // Use a wrapper to ensure we have latest state for handleNext
+        const handleEnded = () => {
+            // We use a small hack here to get the latest state without re-registering
+            // Or we can just use a ref for the ended handler if needed
+            // But for now, we leave it in the dependency array
+            handleNext(repeatMode === 'none' && !isShuffle);
+        };
 
         audio.addEventListener('timeupdate', handleTimeUpdate);
         audio.addEventListener('loadedmetadata', handleLoadedMetadata);
@@ -147,17 +157,18 @@ export const MusicProvider = ({ children }) => {
         };
     }, [currentSongId, songs, repeatMode, isShuffle, selectedPlaylist]);
 
-    const formatUrl = (url) => {
-        if (!url) return url;
-        if (typeof url !== 'string') return url;
+    // Fixed formatUrl with memoization and environment variable fix
+    const formatUrl = useCallback((url) => {
+        if (!url || typeof url !== 'string') return '';
         if (url.startsWith('http')) return url;
-        // Fix for Cloudinary paths that might not start with http but aren't local uploads
-        if (url.startsWith('MusicPlayerPRO')) return `https://res.cloudinary.com/${process.env.CLOUDINARY_CLOUD_NAME || 'dzp9rltpr'}/video/upload/${url}`;
 
-        // Prefix relative paths with API_URL
+        // Use import.meta.env for Vite projects
+        const cloudName = import.meta.env?.VITE_CLOUDINARY_CLOUD_NAME || 'dzp9rltpr';
+        if (url.startsWith('MusicPlayerPRO')) return `https://res.cloudinary.com/${cloudName}/video/upload/${url}`;
+
         const baseUrl = API_URL.endsWith('/') ? API_URL.slice(0, -1) : API_URL;
         return `${baseUrl}${url.startsWith('/') ? '' : '/'}${url}`;
-    };
+    }, []);
 
     useEffect(() => {
         if (currentSong && currentSong.audioUrl) {
@@ -165,10 +176,17 @@ export const MusicProvider = ({ children }) => {
             if (audioRef.current.src !== absoluteAudioUrl) {
                 audioRef.current.src = absoluteAudioUrl;
                 audioRef.current.load();
-                if (isPlaying) audioRef.current.play().catch(console.error);
+                if (isPlaying) {
+                    const playPromise = audioRef.current.play();
+                    if (playPromise !== undefined) {
+                        playPromise.catch(error => {
+                            if (error.name !== 'AbortError') console.error('Playback error:', error);
+                        });
+                    }
+                }
             }
         }
-    }, [currentSong, isPlaying]);
+    }, [currentSong, isPlaying, formatUrl]);
 
     useEffect(() => {
         audioRef.current.volume = volume;
@@ -176,15 +194,23 @@ export const MusicProvider = ({ children }) => {
 
     useEffect(() => {
         if (isPlaying) {
-            audioRef.current.play().catch(() => setIsPlaying(false));
+            const playPromise = audioRef.current.play();
+            if (playPromise !== undefined) {
+                playPromise.catch(error => {
+                    if (error.name !== 'AbortError') {
+                        console.error('Playback error:', error);
+                        setIsPlaying(false);
+                    }
+                });
+            }
         } else {
             audioRef.current.pause();
         }
     }, [isPlaying]);
 
-    const togglePlay = () => setIsPlaying(!isPlaying);
+    const togglePlay = useCallback(() => setIsPlaying(prev => !prev), []);
 
-    const handleNext = (stopAtEnd = false) => {
+    const handleNext = useCallback((stopAtEnd = false) => {
         if (filteredSongs.length === 0) return;
         if (repeatMode === 'one') {
             audioRef.current.currentTime = 0;
@@ -206,9 +232,9 @@ export const MusicProvider = ({ children }) => {
         }
         setCurrentSongId(filteredSongs[nextIndex]?._id || filteredSongs[nextIndex]);
         setIsPlaying(true);
-    };
+    }, [filteredSongs, isShuffle, repeatMode, currentSongId]);
 
-    const handlePrevious = () => {
+    const handlePrevious = useCallback(() => {
         if (filteredSongs.length === 0) return;
         let prevIndex;
         const currentIndex = filteredSongs.findIndex(s => String(s._id || s) === String(currentSongId));
@@ -221,44 +247,54 @@ export const MusicProvider = ({ children }) => {
         }
         setCurrentSongId(filteredSongs[prevIndex]?._id || filteredSongs[prevIndex]);
         setIsPlaying(true);
-    };
+    }, [filteredSongs, isShuffle, currentSongId]);
 
-    const handleSeek = (percentage) => {
+    const handleSeek = useCallback((percentage) => {
         if (audioRef.current.duration) {
             const seekTime = (percentage / 100) * audioRef.current.duration;
             audioRef.current.currentTime = seekTime;
         }
-    };
+    }, []);
 
-    const skipForward = () => {
+    const skipForward = useCallback(() => {
         audioRef.current.currentTime = Math.min(audioRef.current.duration, audioRef.current.currentTime + 15);
-    };
+    }, []);
 
-    const skipBackward = () => {
+    const skipBackward = useCallback(() => {
         audioRef.current.currentTime = Math.max(0, audioRef.current.currentTime - 15);
-    };
+    }, []);
+
+    // Memoize the context value to prevent unnecessary re-renders of consuming components
+    const contextValue = useMemo(() => ({
+        songs, setSongs,
+        playlists, setPlaylists,
+        currentSongId, setCurrentSongId,
+        currentSong,
+        isPlaying, setIsPlaying,
+        currentTime, duration, progress,
+        volume, setVolume,
+        isShuffle, setIsShuffle,
+        repeatMode, setRepeatMode,
+        isAllSongsView, setIsAllSongsView,
+        selectedPlaylist, setSelectedPlaylist,
+        searchTerm, setSearchTerm,
+        showNowPlayingView, setShowNowPlayingView,
+        filteredSongs,
+        favorites, setFavorites,
+        toggleFavorite,
+        formatUrl,
+        togglePlay, handleNext, handlePrevious, handleSeek, skipForward, skipBackward
+    }), [
+        songs, playlists, currentSongId, currentSong, isPlaying,
+        currentTime, duration, progress, volume, isShuffle,
+        repeatMode, isAllSongsView, selectedPlaylist, searchTerm,
+        showNowPlayingView, filteredSongs, favorites, toggleFavorite,
+        formatUrl, togglePlay, handleNext, handlePrevious, handleSeek,
+        skipForward, skipBackward
+    ]);
 
     return (
-        <MusicContext.Provider value={{
-            songs, setSongs,
-            playlists, setPlaylists,
-            currentSongId, setCurrentSongId,
-            currentSong,
-            isPlaying, setIsPlaying,
-            currentTime, duration, progress,
-            volume, setVolume,
-            isShuffle, setIsShuffle,
-            repeatMode, setRepeatMode,
-            isAllSongsView, setIsAllSongsView,
-            selectedPlaylist, setSelectedPlaylist,
-            searchTerm, setSearchTerm,
-            showNowPlayingView, setShowNowPlayingView,
-            filteredSongs,
-            favorites, setFavorites,
-            toggleFavorite,
-            formatUrl,
-            togglePlay, handleNext, handlePrevious, handleSeek, skipForward, skipBackward
-        }}>
+        <MusicContext.Provider value={contextValue}>
             {children}
         </MusicContext.Provider>
     );

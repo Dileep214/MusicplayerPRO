@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import axios from 'axios';
 import {
     Music,
@@ -18,7 +18,7 @@ import BackgroundWrapper from '../components/BackgroundWrapper';
 import API_URL from '../config';
 import { useMusic } from '../context/MusicContext';
 
-const AdminDashboardPage = () => {
+const AdminDashboardPage = React.memo(() => {
     const { formatUrl } = useMusic();
     const [stats, setStats] = useState({
         totalSongs: 0,
@@ -33,11 +33,7 @@ const AdminDashboardPage = () => {
     const [isAlbumModalOpen, setIsAlbumModalOpen] = useState(false);
     const [loading, setLoading] = useState(true);
 
-    useEffect(() => {
-        fetchData();
-    }, []);
-
-    const fetchData = async () => {
+    const fetchData = useCallback(async () => {
         setLoading(true);
         try {
             const [statsRes, songsRes, albumsRes] = await Promise.all([
@@ -53,31 +49,35 @@ const AdminDashboardPage = () => {
         } finally {
             setLoading(false);
         }
-    };
+    }, []);
 
-    const handleDeleteSong = async (id) => {
+    useEffect(() => {
+        fetchData();
+    }, [fetchData]);
+
+    const handleDeleteSong = useCallback(async (id) => {
         if (!window.confirm('Are you sure you want to delete this song?')) return;
         try {
             await axios.delete(`${API_URL}/api/songs/${id}`);
-            setSongs(songs.filter(song => song._id !== id));
+            setSongs(prev => prev.filter(song => song._id !== id));
             fetchData(); // Refresh stats
         } catch (error) {
             console.error('Error deleting song:', error);
         }
-    };
+    }, [fetchData]);
 
-    const handleDeleteAlbum = async (id) => {
+    const handleDeleteAlbum = useCallback(async (id) => {
         if (!window.confirm('Are you sure you want to delete this album?')) return;
         try {
             await axios.delete(`${API_URL}/api/albums/${id}`);
-            setAlbums(albums.filter(album => album._id !== id));
+            setAlbums(prev => prev.filter(album => album._id !== id));
             fetchData(); // Refresh stats
         } catch (error) {
             console.error('Error deleting album:', error);
         }
-    };
+    }, [fetchData]);
 
-    const StatCard = ({ icon: Icon, label, value, color }) => (
+    const StatCard = useMemo(() => ({ icon: Icon, label, value, color }) => (
         <div className="bg-white/5 border border-white/10 rounded-2xl p-6 flex items-center gap-4 hover:bg-white/10 transition-all duration-300 group">
             <div className={`p-4 rounded-xl ${color} bg-opacity-20 group-hover:scale-110 transition-transform duration-300`}>
                 <Icon className={`w-6 h-6 ${color.replace('bg-', 'text-')}`} />
@@ -87,7 +87,13 @@ const AdminDashboardPage = () => {
                 <p className="text-2xl font-bold text-white">{value}</p>
             </div>
         </div>
-    );
+    ), []);
+
+    const handleTabChangeSongs = useCallback(() => setActiveTab('songs'), []);
+    const handleTabChangeAlbums = useCallback(() => setActiveTab('albums'), []);
+    const handleAddClick = useCallback(() => activeTab === 'songs' ? setIsSongModalOpen(true) : setIsAlbumModalOpen(true), [activeTab]);
+    const handleCloseSongModal = useCallback(() => setIsSongModalOpen(false), []);
+    const handleCloseAlbumModal = useCallback(() => setIsAlbumModalOpen(false), []);
 
     return (
         <BackgroundWrapper>
@@ -116,14 +122,14 @@ const AdminDashboardPage = () => {
                     <div className="p-6 border-b border-white/10 flex flex-col md:flex-row md:items-center justify-between gap-4">
                         <div className="flex items-center gap-2 p-1 bg-black/20 rounded-xl w-fit">
                             <button
-                                onClick={() => setActiveTab('songs')}
+                                onClick={handleTabChangeSongs}
                                 className={`px-6 py-2 rounded-lg font-medium transition-all duration-200 flex items-center gap-2 ${activeTab === 'songs' ? 'bg-green-500 text-[#0f0f1a] shadow-lg shadow-green-500/20' : 'text-gray-400 hover:text-white'}`}
                             >
                                 <Music className="w-4 h-4" />
                                 Songs
                             </button>
                             <button
-                                onClick={() => setActiveTab('albums')}
+                                onClick={handleTabChangeAlbums}
                                 className={`px-6 py-2 rounded-lg font-medium transition-all duration-200 flex items-center gap-2 ${activeTab === 'albums' ? 'bg-green-500 text-[#0f0f1a] shadow-lg shadow-green-500/20' : 'text-gray-400 hover:text-white'}`}
                             >
                                 <Disc className="w-4 h-4" />
@@ -132,7 +138,7 @@ const AdminDashboardPage = () => {
                         </div>
 
                         <button
-                            onClick={() => activeTab === 'songs' ? setIsSongModalOpen(true) : setIsAlbumModalOpen(true)}
+                            onClick={handleAddClick}
                             className="bg-green-500 hover:bg-green-600 text-[#0f0f1a] font-bold px-6 py-2.5 rounded-xl flex items-center gap-2 transition-all active:scale-95 shadow-lg shadow-green-500/20"
                         >
                             <Plus className="w-5 h-5" />
@@ -164,7 +170,12 @@ const AdminDashboardPage = () => {
                                         <tr key={song._id} className="border-b border-white/5 hover:bg-white/[0.02] transition-colors group">
                                             <td className="px-6 py-4">
                                                 <div className="flex items-center gap-3">
-                                                    <img src={formatUrl(song.coverImg)} alt="" className="w-10 h-10 rounded-lg object-cover shadow-lg" />
+                                                    <img
+                                                        src={formatUrl(song.coverImg)}
+                                                        alt=""
+                                                        loading="lazy"
+                                                        className="w-10 h-10 rounded-lg object-cover shadow-lg"
+                                                    />
                                                     <span className="font-medium text-white group-hover:text-green-400 transition-colors">{song.title}</span>
                                                 </div>
                                             </td>
@@ -206,7 +217,12 @@ const AdminDashboardPage = () => {
                                         <tr key={album._id} className="border-b border-white/5 hover:bg-white/[0.02] transition-colors group">
                                             <td className="px-6 py-4">
                                                 <div className="flex items-center gap-3">
-                                                    <img src={formatUrl(album.coverImg)} alt="" className="w-10 h-10 rounded-lg object-cover shadow-lg" />
+                                                    <img
+                                                        src={formatUrl(album.coverImg)}
+                                                        alt=""
+                                                        loading="lazy"
+                                                        className="w-10 h-10 rounded-lg object-cover shadow-lg"
+                                                    />
                                                     <span className="font-medium text-white group-hover:text-green-400 transition-colors">{album.title}</span>
                                                 </div>
                                             </td>
@@ -233,16 +249,16 @@ const AdminDashboardPage = () => {
 
             <AddSongModal
                 isOpen={isSongModalOpen}
-                onClose={() => setIsSongModalOpen(false)}
+                onClose={handleCloseSongModal}
                 onSongAdded={fetchData}
             />
             <AddAlbumModal
                 isOpen={isAlbumModalOpen}
-                onClose={() => setIsAlbumModalOpen(false)}
+                onClose={handleCloseAlbumModal}
                 onAlbumAdded={fetchData}
             />
         </BackgroundWrapper>
     );
-};
+});
 
 export default AdminDashboardPage;

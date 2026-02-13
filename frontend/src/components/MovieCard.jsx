@@ -1,6 +1,6 @@
 import React from 'react';
 
-const MovieCard = ({ movieName, onClick, isActive, imageUrl }) => {
+const MovieCard = React.memo(({ movieName, onClick, isActive, imageUrl }) => {
     return (
         <div className="flex flex-col items-center gap-2 group">
             <div
@@ -15,6 +15,7 @@ const MovieCard = ({ movieName, onClick, isActive, imageUrl }) => {
                     <img
                         src={imageUrl}
                         alt={movieName}
+                        loading="lazy"
                         className={`w-full h-full object-cover transition-all duration-700 ease-out ${isActive ? 'brightness-110' : 'brightness-75 group-hover:brightness-105 group-hover:scale-110'}`}
                     />
                 ) : (
@@ -36,6 +37,6 @@ const MovieCard = ({ movieName, onClick, isActive, imageUrl }) => {
             </p>
         </div>
     );
-};
+});
 
 export default MovieCard;

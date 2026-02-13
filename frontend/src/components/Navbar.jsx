@@ -1,22 +1,42 @@
+import React, { useMemo } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Music, LayoutDashboard, Home, BookOpen, User, Search } from 'lucide-react';
 import { useMusic } from '../context/MusicContext';
 
-const Navbar = () => {
+const NAV_LINKS_BASE = [
+    { path: '/home', label: 'Home', icon: Home },
+    { path: '/library', label: 'Library', icon: BookOpen },
+    { path: '/profile', label: 'Profile', icon: User },
+];
+
+const Navbar = React.memo(() => {
     const location = useLocation();
     const { searchTerm, setSearchTerm } = useMusic();
 
-    const userObj = JSON.parse(localStorage.getItem('user') || 'null');
-    const isAdmin = userObj && userObj.role === 'admin' && userObj.email.toLowerCase() === 'dileepkomarthi@gmail.com';
-
-    const navLinks = [
-        { path: '/home', label: 'Home', icon: Home },
-        { path: '/library', label: 'Library', icon: BookOpen },
-        ...(isAdmin ? [{ path: '/admin', label: 'Admin', icon: LayoutDashboard }] : []),
-        { path: '/profile', label: 'Profile', icon: User },
-    ];
-
     const user = localStorage.getItem('user');
+
+    const userObj = useMemo(() => {
+        try {
+            return JSON.parse(user || 'null');
+        } catch {
+            return null;
+        }
+    }, [user]);
+
+    const isAdmin = useMemo(() =>
+        userObj && userObj.role === 'admin' && userObj.email?.toLowerCase() === 'dileepkomarthi@gmail.com',
+        [userObj]
+    );
+
+    const navLinks = useMemo(() => {
+        if (!isAdmin) return NAV_LINKS_BASE;
+        const links = [...NAV_LINKS_BASE];
+        links.splice(2, 0, { path: '/admin', label: 'Admin', icon: LayoutDashboard });
+        return links;
+    }, [isAdmin]);
+
+    const handleSearchChange = (e) => setSearchTerm(e.target.value);
+    const handleLogout = () => localStorage.removeItem('user');
 
     return (
         <nav className="fixed top-0 left-0 w-full z-40 bg-black/40 backdrop-blur-xl border-b border-white/5 px-6 py-4">
@@ -38,26 +58,29 @@ const Navbar = () => {
                             type="text"
                             placeholder="Find songs, artists..."
                             value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
+                            onChange={handleSearchChange}
                             className="w-full bg-white/5 border border-white/10 rounded-2xl py-2.5 pl-11 pr-4 text-sm text-white focus:outline-none focus:ring-2 focus:ring-green-500/30 focus:bg-white/10 transition-all placeholder:text-white/20"
                         />
                     </div>
                 )}
 
                 <div className="hidden md:flex items-center gap-1 bg-white/5 p-1 rounded-2xl border border-white/5 flex-shrink-0">
-                    {user && navLinks.map((link) => (
-                        <Link
-                            key={link.path}
-                            to={link.path}
-                            className={`flex items-center gap-2 px-5 py-2 rounded-xl text-sm font-semibold transition-all duration-200 ${location.pathname === link.path
-                                ? 'bg-green-500 text-[#0f0f1a] shadow-lg shadow-green-500/20'
-                                : 'text-gray-400 hover:text-white hover:bg-white/5'
-                                }`}
-                        >
-                            <link.icon className="w-4 h-4" />
-                            {link.label}
-                        </Link>
-                    ))}
+                    {user && navLinks.map((link) => {
+                        const Icon = link.icon;
+                        return (
+                            <Link
+                                key={link.path}
+                                to={link.path}
+                                className={`flex items-center gap-2 px-5 py-2 rounded-xl text-sm font-semibold transition-all duration-200 ${location.pathname === link.path
+                                    ? 'bg-green-500 text-[#0f0f1a] shadow-lg shadow-green-500/20'
+                                    : 'text-gray-400 hover:text-white hover:bg-white/5'
+                                    }`}
+                            >
+                                <Icon className="w-4 h-4" />
+                                {link.label}
+                            </Link>
+                        );
+                    })}
                 </div>
 
                 <div className="flex gap-4 flex-shrink-0">
@@ -67,7 +90,7 @@ const Navbar = () => {
                     {user ? (
                         <Link
                             to="/login"
-                            onClick={() => localStorage.removeItem('user')}
+                            onClick={handleLogout}
                             className="px-6 py-2.5 rounded-xl bg-white text-[#0f0f1a] text-sm font-bold hover:bg-gray-200 transition-colors"
                         >
                             Logout
@@ -87,6 +110,6 @@ const Navbar = () => {
             </div>
         </nav>
     );
-};
+});
 
 export default Navbar;

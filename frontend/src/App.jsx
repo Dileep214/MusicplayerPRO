@@ -1,14 +1,15 @@
-import React from 'react'
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
-import LandingPage from './pages/LandingPage'
-import SignUpPage from './pages/SignUpPage'
-import LoginPage from './pages/LoginPage'
-import HomePage from './pages/HomePage'
-import MusicLibraryPage from './pages/MusicLibraryPage'
-import ProfilePage from './pages/ProfilePage'
-import AdminDashboardPage from './pages/AdminDashboardPage'
+import React, { Suspense, lazy } from 'react'
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
+import { MusicProvider } from './context/MusicContext'
 
-import { Navigate } from 'react-router-dom'
+// Lazy load pages
+const LandingPage = lazy(() => import('./pages/LandingPage'));
+const SignUpPage = lazy(() => import('./pages/SignUpPage'));
+const LoginPage = lazy(() => import('./pages/LoginPage'));
+const HomePage = lazy(() => import('./pages/HomePage'));
+const MusicLibraryPage = lazy(() => import('./pages/MusicLibraryPage'));
+const ProfilePage = lazy(() => import('./pages/ProfilePage'));
+const AdminDashboardPage = lazy(() => import('./pages/AdminDashboardPage'));
 
 const ProtectedRoute = ({ children }) => {
   const user = localStorage.getItem('user');
@@ -19,33 +20,45 @@ const ProtectedRoute = ({ children }) => {
 };
 
 const AdminRoute = ({ children }) => {
-  const user = JSON.parse(localStorage.getItem('user') || 'null');
-  if (!user || user.role !== 'admin' || user.email.toLowerCase() !== 'dileepkomarthi@gmail.com') {
+  const userString = localStorage.getItem('user');
+  let user = null;
+  try {
+    user = userString ? JSON.parse(userString) : null;
+  } catch (e) {
+    console.error('Failed to parse user for AdminRoute:', e);
+  }
+  if (!user || user.role !== 'admin' || user.email?.toLowerCase() !== 'dileepkomarthi@gmail.com') {
     return <Navigate to="/home" replace />;
   }
   return children;
 };
 
-import { MusicProvider } from './context/MusicContext'
+const PageLoader = () => (
+  <div className="w-full h-screen bg-black flex items-center justify-center">
+    <div className="w-8 h-8 border-4 border-green-500/30 border-t-green-500 rounded-full animate-spin"></div>
+  </div>
+);
 
 const App = () => {
   return (
     <MusicProvider>
       <Router>
-        <Routes>
-          <Route path="/" element={<LandingPage />} />
-          <Route path="/signup" element={<SignUpPage />} />
-          <Route path="/login" element={<LoginPage />} />
+        <Suspense fallback={<PageLoader />}>
+          <Routes>
+            <Route path="/" element={<LandingPage />} />
+            <Route path="/signup" element={<SignUpPage />} />
+            <Route path="/login" element={<LoginPage />} />
 
-          {/* Protected Routes */}
-          <Route path="/home" element={<ProtectedRoute><HomePage /></ProtectedRoute>} />
-          <Route path="/library" element={<ProtectedRoute><MusicLibraryPage /></ProtectedRoute>} />
-          <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
-          <Route path="/admin" element={<AdminRoute><AdminDashboardPage /></AdminRoute>} />
-        </Routes>
+            {/* Protected Routes */}
+            <Route path="/home" element={<ProtectedRoute><HomePage /></ProtectedRoute>} />
+            <Route path="/library" element={<ProtectedRoute><MusicLibraryPage /></ProtectedRoute>} />
+            <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
+            <Route path="/admin" element={<AdminRoute><AdminDashboardPage /></AdminRoute>} />
+          </Routes>
+        </Suspense>
       </Router>
     </MusicProvider>
   )
 }
 
-export default App
+export default App;

@@ -1,8 +1,8 @@
+import React, { useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useMusic } from '../context/MusicContext';
 
-
-const MusicPlayer = () => {
+const MusicPlayer = React.memo(() => {
     const {
         currentSong,
         isPlaying,
@@ -29,32 +29,57 @@ const MusicPlayer = () => {
 
     const navigate = useNavigate();
 
-    const formatTime = (time) => {
+    const formatTime = useCallback((time) => {
         const minutes = Math.floor(time / 60);
         const seconds = Math.floor(time % 60);
         return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-    };
+    }, []);
+
+    const handleInfoClick = useCallback(() => {
+        setSelectedPlaylist(null);
+        setIsAllSongsView(true);
+        setShowNowPlayingView(true);
+        setSearchTerm('');
+        navigate('/library');
+    }, [setSelectedPlaylist, setIsAllSongsView, setShowNowPlayingView, setSearchTerm, navigate]);
+
+    const handleShuffleToggle = useCallback(() => {
+        setIsShuffle(!isShuffle);
+    }, [isShuffle, setIsShuffle]);
+
+    const handleRepeatToggle = useCallback(() => {
+        const modes = ['none', 'all', 'one'];
+        const next = modes[(modes.indexOf(repeatMode) + 1) % modes.length];
+        setRepeatMode(next);
+    }, [repeatMode, setRepeatMode]);
+
+    const handleVolumeChange = useCallback((e) => {
+        setVolume(parseFloat(e.target.value));
+    }, [setVolume]);
+
+    const handleMuteToggle = useCallback(() => {
+        setVolume(volume > 0 ? 0 : 0.7);
+    }, [volume, setVolume]);
 
     if (!currentSong || showNowPlayingView) return null;
 
     return (
-        <div className={`fixed bottom-0 left-0 right-0 bg-black/40 backdrop-blur-xl border-t border-white/10 px-6 py-[14px] z-50`}>
+        <div className="fixed bottom-0 left-0 right-0 bg-black/40 backdrop-blur-xl border-t border-white/10 px-6 py-[14px] z-50">
             <div className="max-w-7xl mx-auto flex items-center justify-between gap-8">
 
                 {/* Song Info - Left */}
                 <div
-                    onClick={() => {
-                        setSelectedPlaylist(null);
-                        setIsAllSongsView(true);
-                        setShowNowPlayingView(true);
-                        setSearchTerm('');
-                        navigate('/library');
-                    }}
+                    onClick={handleInfoClick}
                     className="flex items-center gap-4 w-64 hidden md:flex group cursor-pointer"
                 >
                     <div className="w-10 h-10 rounded-lg bg-white/10 overflow-hidden border border-white/10 flex-shrink-0 relative">
                         {currentSong?.coverImg ? (
-                            <img src={formatUrl(currentSong.coverImg)} alt="" className="w-full h-full object-cover" />
+                            <img
+                                src={formatUrl(currentSong.coverImg)}
+                                alt=""
+                                loading="lazy"
+                                className="w-full h-full object-cover"
+                            />
                         ) : (
                             <div className="w-full h-full bg-white/5" />
                         )}
@@ -75,13 +100,13 @@ const MusicPlayer = () => {
                                 min="0"
                                 max="100"
                                 step="0.1"
-                                value={progress}
+                                value={progress || 0}
                                 onChange={(e) => handleSeek(parseFloat(e.target.value))}
                                 className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
                             />
                             <div className="relative w-full h-1 bg-white/10 rounded-full overflow-hidden backdrop-blur-sm">
                                 <div
-                                    className={`absolute left-0 top-0 h-full bg-gradient-to-r from-blue-500 to-green-400 transition-all duration-300 shadow-[0_0_15px_rgba(59,130,246,0.5)]`}
+                                    className="absolute left-0 top-0 h-full bg-gradient-to-r from-blue-500 to-green-400 transition-all duration-300 shadow-[0_0_15px_rgba(59,130,246,0.5)]"
                                     style={{ width: `${progress}%` }}
                                 ></div>
                             </div>
@@ -97,7 +122,7 @@ const MusicPlayer = () => {
                     <div className="flex items-center justify-center gap-8 mt-1">
                         {/* Shuffle */}
                         <button
-                            onClick={() => setIsShuffle(!isShuffle)}
+                            onClick={handleShuffleToggle}
                             className={`transition-all ${isShuffle ? 'text-blue-400 drop-shadow-[0_0_8px_rgba(96,165,250,0.5)]' : 'text-white/40 hover:text-white/60'}`}
                             title="Shuffle"
                         >
@@ -148,11 +173,7 @@ const MusicPlayer = () => {
 
                         {/* Repeat */}
                         <button
-                            onClick={() => {
-                                const modes = ['none', 'all', 'one'];
-                                const next = modes[(modes.indexOf(repeatMode) + 1) % modes.length];
-                                setRepeatMode(next);
-                            }}
+                            onClick={handleRepeatToggle}
                             className={`transition-all relative ${repeatMode !== 'none' ? 'text-blue-400 drop-shadow-[0_0_8px_rgba(96,165,250,0.5)]' : 'text-white/40 hover:text-white/60'}`}
                             title="Repeat"
                         >
@@ -172,7 +193,7 @@ const MusicPlayer = () => {
                 {/* Volume Controller - Right */}
                 <div className="flex items-center gap-3 w-40 hidden lg:flex group">
                     <button
-                        onClick={() => setVolume(volume > 0 ? 0 : 0.7)}
+                        onClick={handleMuteToggle}
                         className="text-white/40 hover:text-white transition-colors"
                     >
                         {volume === 0 ? (
@@ -196,7 +217,7 @@ const MusicPlayer = () => {
                             max="1"
                             step="0.01"
                             value={volume}
-                            onChange={(e) => setVolume(parseFloat(e.target.value))}
+                            onChange={handleVolumeChange}
                             className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
                         />
                         <div
@@ -209,6 +230,6 @@ const MusicPlayer = () => {
             </div>
         </div>
     );
-};
+});
 
 export default MusicPlayer;

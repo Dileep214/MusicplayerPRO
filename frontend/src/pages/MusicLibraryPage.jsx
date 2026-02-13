@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Music, ChevronLeft, Shuffle, RotateCcw, Play, Pause, SkipBack, SkipForward, Repeat, Heart } from 'lucide-react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { ChevronLeft, Shuffle, RotateCcw, Play, Pause, SkipBack, SkipForward, Repeat, Heart } from 'lucide-react';
 import BackgroundWrapper from '../components/BackgroundWrapper';
 import Navbar from '../components/Navbar';
 import MovieCard from '../components/MovieCard';
@@ -8,6 +8,250 @@ import MusicPlayer from '../components/MusicPlayer';
 
 import { useMusic } from '../context/MusicContext';
 import API_URL from '../config';
+
+// --- Constants and Static Data ---
+const QUOTES = [
+    "Music is the universal language of mankind.",
+    "Where words fail, music speaks.",
+    "Life is better with music.",
+    "Music is the art of thinking with sounds.",
+    "Without music, life would be a mistake.",
+    "Music is the soul of the universe.",
+    "Let the music play.",
+    "Music connects people.",
+    "Rhythm is the heartbeat of life.",
+    "Music washes away the dust of everyday life.",
+    "In music we trust.",
+    "Feel the beat.",
+    "Music is my escape.",
+    "Harmony is the goal.",
+    "Melody is the essence of music.",
+    "Music is healing.",
+    "Dance across the edges of time.",
+    "Lost in the rhythm.",
+    "Music brings us together.",
+    "Soundtrack of your life."
+];
+
+// Generate static waveform bars once
+const BARS = Array.from({ length: 40 }, () => ({
+    height: Math.random() * 40 + 20,
+    opacity: Math.random() * 0.5 + 0.3
+}));
+
+const formatTime = (time) => {
+    if (!time) return '0:00';
+    const minutes = Math.floor(time / 60);
+    const seconds = Math.floor(time % 60);
+    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+};
+
+const shuffleArray = (array) => {
+    if (!Array.isArray(array)) return [];
+    const shuffled = [...array];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    return shuffled;
+};
+
+// --- Sub-components ---
+
+// Clock component to prevent full page re-renders every second
+const Clock = React.memo(() => {
+    const [dateTime, setDateTime] = useState(new Date());
+
+    useEffect(() => {
+        const timer = setInterval(() => setDateTime(new Date()), 1000);
+        return () => clearInterval(timer);
+    }, []);
+
+    return (
+        <div className="flex flex-col items-end gap-1">
+            <span className="text-lg font-bold text-white/90 tabular-nums leading-none tracking-tight">
+                {dateTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+            </span>
+            <p className="text-[10px] text-white/40 font-medium mt-0.5 uppercase tracking-wider">
+                {dateTime.toLocaleDateString([], { weekday: 'short', day: 'numeric', month: 'short' })}
+            </p>
+        </div>
+    );
+});
+
+// Separate component for Now Playing View to isolate its complex logic
+const NowPlayingView = React.memo(({
+    showNowPlayingView,
+    setShowNowPlayingView,
+    currentSong,
+    favorites,
+    toggleFavorite,
+    formatUrl,
+    progress,
+    currentTime,
+    duration,
+    handleSeek,
+    skipBackward,
+    skipForward,
+    isShuffle,
+    setIsShuffle,
+    handlePrevious,
+    handleNext,
+    togglePlay,
+    isPlaying,
+    repeatMode,
+    setRepeatMode
+}) => {
+    return (
+        <div className={`absolute inset-0 flex flex-col items-center px-6 py-4 transition-all duration-700 ease-[cubic-bezier(0.23,1,0.32,1)] ${showNowPlayingView ? 'translate-x-0 opacity-100 scale-100 z-10' : 'translate-x-[-100%] opacity-0 scale-90 pointer-events-none z-0'}`}>
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[150%] h-[30%] bg-blue-500/10 blur-[100px] pointer-events-none" />
+
+            <div className="w-full flex justify-between items-center mb-4 relative z-10 px-2">
+                <button
+                    onClick={() => setShowNowPlayingView(false)}
+                    className="p-2 bg-white/5 border border-white/10 hover:bg-white/10 rounded-xl transition-all"
+                >
+                    <ChevronLeft className="w-5 h-5 text-white" />
+                </button>
+                <span className="text-[10px] font-bold uppercase tracking-[0.3em] text-white/40">Now Playing</span>
+                <button
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        toggleFavorite(currentSong?._id || currentSong);
+                    }}
+                    className={`p-2 rounded-xl transition-all duration-500 ${favorites.some(id => String(id) === String(currentSong?._id || currentSong))
+                        ? 'text-red-500 bg-red-500/10 shadow-[0_0_15px_rgba(239,68,68,0.25)]'
+                        : 'text-white/20 hover:text-white/60 hover:bg-white/5'
+                        }`}
+                >
+                    <Heart
+                        className={`w-5 h-5 transition-all duration-500 ${favorites.some(id => String(id) === String(currentSong?._id || currentSong)) ? 'fill-current scale-110 drop-shadow-[0_0_8px_rgba(239,68,68,0.6)]' : ''}`}
+                    />
+                </button>
+            </div>
+
+            <div className="w-full aspect-square max-w-[190px] rounded-[28px] mb-4 overflow-hidden shadow-2xl bg-white/5 border border-white/10 flex items-center justify-center group relative transition-transform duration-500 hover:scale-[1.02]">
+                {currentSong?.coverImg ? (
+                    <img
+                        src={formatUrl(currentSong.coverImg)}
+                        alt={currentSong.title}
+                        loading="lazy"
+                        className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                    />
+                ) : (
+                    <div className="text-white/10 font-black text-4xl tracking-tighter italic">MUSIC</div>
+                )}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent pointer-events-none" />
+            </div>
+
+            <div className="text-center mb-4 relative z-10 w-full px-4 min-h-[56px] flex flex-col justify-center">
+                <h2 className="text-lg font-bold text-white mb-0.5 tracking-tight drop-shadow-md truncate">
+                    {currentSong?.title || "Unknown Title"}
+                </h2>
+                <p className="text-white/50 text-sm font-medium tracking-wide truncate">
+                    {currentSong?.artist || "Unknown Artist"}
+                </p>
+            </div>
+
+            <div className="w-full h-8 flex items-center justify-center gap-[3px] mb-4 px-4">
+                {BARS.map((bar, i) => (
+                    <div
+                        key={i}
+                        className="w-[3px] bg-white rounded-full transition-all duration-300"
+                        style={{
+                            height: `${bar.height}%`,
+                            opacity: progress > (i / BARS.length) * 100 ? 1 : 0.15,
+                            boxShadow: progress > (i / BARS.length) * 100 ? '0 0 10px rgba(255,255,255,0.3)' : 'none'
+                        }}
+                    />
+                ))}
+            </div>
+
+            <div className="w-full px-4 mb-4">
+                <div className="flex justify-between text-[9px] font-bold text-white/30 mb-1.5 tracking-widest tabular-nums uppercase">
+                    <span>{formatTime(currentTime)}</span>
+                    <span>{formatTime(duration)}</span>
+                </div>
+                <div className="relative group h-2 flex items-center">
+                    <input
+                        type="range"
+                        min="0"
+                        max="100"
+                        step="0.1"
+                        value={progress || 0}
+                        onChange={(e) => handleSeek(parseFloat(e.target.value))}
+                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-20"
+                    />
+                    <div className="relative w-full h-1.5 bg-white/10 rounded-full overflow-hidden">
+                        <div
+                            className="absolute left-0 top-0 h-full bg-white transition-all duration-100 shadow-[0_0_15_rgba(255,255,255,0.5)]"
+                            style={{ width: `${progress}%` }}
+                        ></div>
+                    </div>
+                    <div
+                        className="absolute h-3.5 w-3.5 bg-white rounded-full border-[2.5px] border-black/20 shadow-xl pointer-events-none z-10 transition-transform group-hover:scale-125"
+                        style={{ left: `calc(${progress}% - 7px)` }}
+                    ></div>
+                </div>
+            </div>
+
+            <div className="w-full flex items-center justify-between px-2 mt-auto pb-4">
+                <div className="flex items-center gap-2">
+                    <button onClick={skipBackward} className="p-2 hover:bg-white/10 rounded-full text-white/40 hover:text-white transition-all relative group">
+                        <RotateCcw className="w-4 h-4" />
+                        <span className="absolute inset-0 flex items-center justify-center text-[6px] font-black mt-0.5 opacity-60">15</span>
+                    </button>
+                    <button
+                        onClick={() => setIsShuffle(!isShuffle)}
+                        className={`p-2 rounded-full transition-all ${isShuffle ? 'text-white scale-110 drop-shadow-[0_0_8px_rgba(255,255,255,0.5)]' : 'text-white/20 hover:text-white/40'}`}
+                    >
+                        <Shuffle className="w-4 h-4" />
+                    </button>
+                </div>
+
+                <div className="flex items-center gap-3">
+                    <button onClick={handlePrevious} className="p-2 text-white/80 hover:text-white transition-all active:scale-90">
+                        <SkipBack className="w-6 h-6 fill-current" strokeWidth={0} />
+                    </button>
+
+                    <button
+                        onClick={togglePlay}
+                        className="w-12 h-12 rounded-full bg-white flex items-center justify-center shadow-[0_8px_24px_rgba(255,255,255,0.3)] hover:scale-105 active:scale-95 transition-all text-black"
+                    >
+                        {isPlaying ? (
+                            <Pause className="w-5 h-5 fill-current" />
+                        ) : (
+                            <Play className="w-5 h-5 fill-current ml-1" />
+                        )}
+                    </button>
+
+                    <button onClick={() => handleNext()} className="p-2 text-white/80 hover:text-white transition-all active:scale-90">
+                        <SkipForward className="w-6 h-6 fill-current" strokeWidth={0} />
+                    </button>
+                </div>
+
+                <div className="flex items-center gap-2 text-right">
+                    <button
+                        onClick={() => {
+                            const next = repeatMode === 'none' ? 'all' : repeatMode === 'all' ? 'one' : 'none';
+                            setRepeatMode(next);
+                        }}
+                        className={`p-2 rounded-full relative transition-all ${repeatMode !== 'none' ? 'text-white scale-110 drop-shadow-[0_0_8px_rgba(255,255,255,0.5)]' : 'text-white/20 hover:text-white/40'}`}
+                    >
+                        <Repeat className="w-4 h-4" />
+                        {repeatMode === 'one' && <span className="absolute -top-1 -right-1 text-[7px] font-black bg-white text-black w-2.5 h-2.5 rounded-full flex items-center justify-center">1</span>}
+                    </button>
+                    <button onClick={skipForward} className="p-2 hover:bg-white/10 rounded-full text-white/40 hover:text-white transition-all relative group">
+                        <RotateCcw className="w-4 h-4 scale-x-[-1]" />
+                        <span className="absolute inset-0 flex items-center justify-center text-[6px] font-black mt-0.5 opacity-60">15</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+});
+
+// --- Main Page ---
 
 const MusicLibraryPage = () => {
     const {
@@ -26,69 +270,19 @@ const MusicLibraryPage = () => {
         filteredSongs,
         isShuffle, setIsShuffle,
         repeatMode, setRepeatMode,
-        volume, setVolume,
         favorites, toggleFavorite,
         formatUrl
     } = useMusic();
 
-    const formatTime = (time) => {
-        if (!time) return '0:00';
-        const minutes = Math.floor(time / 60);
-        const seconds = Math.floor(time % 60);
-        return `${minutes}:${seconds.toString().padStart(2, '0')}`;
-    };
-
-    const shuffleArray = (array) => {
-        const shuffled = [...array];
-        for (let i = shuffled.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-        }
-        return shuffled;
-    };
-
-    const [dateTime, setDateTime] = useState(new Date());
-
     useEffect(() => {
-        const timer = setInterval(() => setDateTime(new Date()), 1000);
         return () => {
-            clearInterval(timer);
             setSearchTerm(''); // Clear search when leaving
         };
     }, [setSearchTerm]);
 
-    // Generate static waveform bars for the visualizer
-    const bars = Array.from({ length: 40 }, (_, i) => ({
-        height: Math.random() * 40 + 20,
-        opacity: Math.random() * 0.5 + 0.3
-    }));
-
     const [quoteIndex, setQuoteIndex] = useState(0);
-    const quotes = [
-        "Music is the universal language of mankind.",
-        "Where words fail, music speaks.",
-        "Life is better with music.",
-        "Music is the art of thinking with sounds.",
-        "Without music, life would be a mistake.",
-        "Music is the soul of the universe.",
-        "Let the music play.",
-        "Music connects people.",
-        "Rhythm is the heartbeat of life.",
-        "Music washes away the dust of everyday life.",
-        "In music we trust.",
-        "Feel the beat.",
-        "Music is my escape.",
-        "Harmony is the goal.",
-        "Melody is the essence of music.",
-        "Music is healing.",
-        "Dance across the edges of time.",
-        "Lost in the rhythm.",
-        "Music brings us together.",
-        "Soundtrack of your life."
-    ];
 
     useEffect(() => {
-        // Check for stored rotation time
         const stored = localStorage.getItem('quoteRotation');
         let initialIndex = 0;
         const now = Date.now();
@@ -99,13 +293,11 @@ const MusicLibraryPage = () => {
             if (now - timestamp < sixHours) {
                 initialIndex = index;
             } else {
-                // Time passed, calculate new index
                 const elapsedSteps = Math.floor((now - timestamp) / sixHours);
-                initialIndex = (index + elapsedSteps) % quotes.length;
+                initialIndex = (index + elapsedSteps) % QUOTES.length;
             }
         } else {
-            // First time setup
-            initialIndex = Math.floor(Math.random() * quotes.length);
+            initialIndex = Math.floor(Math.random() * QUOTES.length);
         }
 
         setQuoteIndex(initialIndex);
@@ -113,7 +305,7 @@ const MusicLibraryPage = () => {
 
         const interval = setInterval(() => {
             setQuoteIndex(prev => {
-                const next = (prev + 1) % quotes.length;
+                const next = (prev + 1) % QUOTES.length;
                 localStorage.setItem('quoteRotation', JSON.stringify({ index: next, timestamp: Date.now() }));
                 return next;
             });
@@ -122,7 +314,7 @@ const MusicLibraryPage = () => {
         return () => clearInterval(interval);
     }, []);
 
-    const handlePlaylistClick = (playlist) => {
+    const handlePlaylistClick = useCallback((playlist) => {
         const playlistId = String(playlist._id || playlist);
         const selectedId = selectedPlaylist ? String(selectedPlaylist._id || selectedPlaylist) : null;
 
@@ -131,32 +323,39 @@ const MusicLibraryPage = () => {
         } else {
             setSelectedPlaylist(playlist);
             setIsAllSongsView(false);
-            setShowNowPlayingView(false); // Close Now Playing view if clicking playlist
+            setShowNowPlayingView(false);
         }
-    };
+    }, [selectedPlaylist, setSelectedPlaylist, setIsAllSongsView, setShowNowPlayingView]);
 
-    // Fetch data...
+    const handleSongClick = useCallback((song) => {
+        setCurrentSongId(song._id || song);
+        setIsPlaying(true);
+        if (isAllSongsView) setShowNowPlayingView(true);
+    }, [setCurrentSongId, setIsPlaying, isAllSongsView, setShowNowPlayingView]);
+
+    // Optimized Fetch Data with caching check
     useEffect(() => {
         const fetchData = async () => {
+            // Prevent redundant fetches if we already have data
+            if (songs.length > 0 && playlists.length > 0) return;
+
             try {
-                // Add timestamp to prevent caching
-                const timestamp = new Date().getTime();
-                const songsResponse = await fetch(`${API_URL}/api/songs?t=${timestamp}`);
+                // Using a slightly longer cache time for basic caching
+                const songsResponse = await fetch(`${API_URL}/api/songs`);
                 const songsData = await songsResponse.json();
                 setSongs(shuffleArray(songsData));
 
                 const [playlistsRes, albumsRes] = await Promise.all([
-                    fetch(`${API_URL}/api/playlists?t=${timestamp}`),
-                    fetch(`${API_URL}/api/albums?t=${timestamp}`)
+                    fetch(`${API_URL}/api/playlists`),
+                    fetch(`${API_URL}/api/albums`)
                 ]);
 
                 const playlistsData = await playlistsRes.json();
                 const albumsData = await albumsRes.json();
 
-                // Normalize albums to look like playlists for the UI
                 const normalizedAlbums = albumsData.map(album => ({
                     ...album,
-                    name: album.title, // Use title as name
+                    name: album.title,
                     isAlbum: true
                 }));
 
@@ -166,7 +365,20 @@ const MusicLibraryPage = () => {
             }
         };
         fetchData();
-    }, []);
+    }, [songs.length, playlists.length, setSongs, setPlaylists]);
+
+    // Pre-calculate filtered playlists and other derived state with useMemo
+    const displayPlaylists = useMemo(() => {
+        const search = searchTerm.toLowerCase();
+        return playlists.filter(playlist =>
+            playlist.name.toLowerCase().includes(search) &&
+            playlist.songs && playlist.songs.length > 0
+        );
+    }, [playlists, searchTerm]);
+
+    const albumArtStyle = useMemo(() => ({
+        backgroundImage: currentSong?.coverImg ? `url(${formatUrl(currentSong.coverImg)})` : 'none'
+    }), [currentSong?.coverImg, formatUrl]);
 
     return (
         <BackgroundWrapper>
@@ -175,21 +387,15 @@ const MusicLibraryPage = () => {
             <div className="pt-20 px-4 md:px-[25px] h-screen overflow-hidden flex flex-col">
                 <div className="w-full flex-1 flex flex-col lg:flex-row items-center lg:items-start justify-center gap-8 lg:gap-12 mt-[7px]">
 
-                    {/* Left Panel - Transitions between Playlists, All Songs, and Now Playing */}
-                    <div className={`w-full max-w-[435px] ${currentSongId && !showNowPlayingView ? 'h-[510px]' : 'h-[635px]'} transition-all duration-700 ease-[cubic-bezier(0.23,1,0.32,1)] backdrop-blur-2xl bg-white/[0.08] border border-white/20 rounded-[28px] shadow-[0_8px_32px_rgba(0,0,0,0.3)] relative overflow-hidden`}>
+                    {/* Left Panel */}
+                    <div className="w-full max-w-[435px] h-[635px] transition-all duration-700 ease-[cubic-bezier(0.23,1,0.32,1)] backdrop-blur-2xl bg-white/[0.08] border border-white/20 rounded-[28px] shadow-[0_8px_32px_rgba(0,0,0,0.3)] relative overflow-hidden">
 
                         {/* Playlists View */}
                         <div className={`absolute inset-0 p-5 overflow-y-auto custom-scrollbar transition-all duration-700 ease-[cubic-bezier(0.23,1,0.32,1)] ${isAllSongsView || showNowPlayingView || selectedPlaylist?.name === 'Favorite Songs' ? '-translate-x-full opacity-0 scale-95 pointer-events-none' : 'translate-x-0 opacity-100 scale-100'}`}>
                             <h2 className="text-xl font-bold text-white mb-5 sticky top-0 bg-[#0f0f1a]/50 backdrop-blur-md pt-1 pb-2 z-10">Song playlists</h2>
                             <div className="grid grid-cols-4 gap-x-3 gap-y-5 pb-5">
-                                {playlists.filter(playlist =>
-                                    playlist.name.toLowerCase().includes(searchTerm.toLowerCase()) &&
-                                    playlist.songs && playlist.songs.length > 0
-                                ).length > 0 ? (
-                                    playlists.filter(playlist =>
-                                        playlist.name.toLowerCase().includes(searchTerm.toLowerCase()) &&
-                                        playlist.songs && playlist.songs.length > 0
-                                    ).map((playlist) => (
+                                {displayPlaylists.length > 0 ? (
+                                    displayPlaylists.map((playlist) => (
                                         <MovieCard
                                             key={playlist._id}
                                             movieName={playlist.name}
@@ -206,7 +412,7 @@ const MusicLibraryPage = () => {
                             </div>
                         </div>
 
-                        {/* All Songs / Favorites View (Left Panel) */}
+                        {/* All Songs / Favorites View */}
                         <div className={`absolute inset-0 p-5 flex flex-col transition-all duration-700 ease-[cubic-bezier(0.23,1,0.32,1)] ${isAllSongsView || showNowPlayingView || selectedPlaylist?.name === 'Favorite Songs' ? 'translate-x-0 opacity-100 scale-100' : 'translate-x-full opacity-0 scale-95 pointer-events-none'}`}>
                             <div className="flex items-center justify-between mb-5">
                                 <h2 className="text-xl font-bold text-white">
@@ -216,10 +422,7 @@ const MusicLibraryPage = () => {
                                     onClick={() => {
                                         setIsAllSongsView(false);
                                         setShowNowPlayingView(false);
-                                        // If we are in favorites view, deselect it to go back to playlists
-                                        if (selectedPlaylist?.name === 'Favorite Songs') {
-                                            setSelectedPlaylist(null);
-                                        }
+                                        if (selectedPlaylist?.name === 'Favorite Songs') setSelectedPlaylist(null);
                                     }}
                                     className="text-[10px] text-white/40 hover:text-white transition-all duration-300 bg-white/5 px-2.5 py-1 rounded-full border border-white/10 hover:bg-white/10"
                                 >
@@ -228,26 +431,16 @@ const MusicLibraryPage = () => {
                             </div>
 
                             <div className="space-y-2 flex-1 overflow-y-auto custom-scrollbar pr-1">
-                                {(selectedPlaylist?.name === 'Favorite Songs'
-                                    ? favorites.map(id => songs.find(s => String(s._id || s) === String(id))).filter(Boolean)
-                                    : songs
-                                ).length > 0 ? (
-                                    (selectedPlaylist?.name === 'Favorite Songs'
-                                        ? favorites.map(id => songs.find(s => String(s._id || s) === String(id))).filter(Boolean)
-                                        : songs
-                                    ).map((song) => (
+                                {filteredSongs.length > 0 ? (
+                                    filteredSongs.map((song) => (
                                         <SongItem
-                                            key={song._id}
+                                            key={song._id || song}
                                             song={song}
-                                            songName={song.title}
-                                            coverImg={song.coverImg}
+                                            imageUrl={song.coverImg ? formatUrl(song.coverImg) : null}
                                             isActive={String(currentSongId) === String(song._id || song)}
-                                            isPlaying={isPlaying && String(currentSongId) === String(song._id || song)}
-                                            onClick={() => {
-                                                setCurrentSongId(song._id || song);
-                                                setIsPlaying(true);
-                                                setShowNowPlayingView(true);
-                                            }}
+                                            isFavorite={favorites.some(id => String(id) === String(song._id || song))}
+                                            onToggleFavorite={toggleFavorite}
+                                            onClick={handleSongClick}
                                         />
                                     ))
                                 ) : (
@@ -259,8 +452,14 @@ const MusicLibraryPage = () => {
                         </div>
                     </div>
 
-                    {/* Center - MUSIC Text & Clear Filter */}
-                    <div className={`hidden lg:flex flex-col items-center justify-center transition-all duration-700 ease-[cubic-bezier(0.23,1,0.32,1)] ${currentSongId ? 'mt-8 lg:mt-[120px]' : 'mt-12 lg:mt-[165px]'} gap-6`}>
+                    {/* Center - MUSIC Text */}
+                    <div
+                        className="hidden lg:flex flex-col items-center justify-center gap-6 transition-all duration-700 ease-[cubic-bezier(0.23,1,0.32,1)]"
+                        style={{
+                            marginTop: '120px',
+                            transform: currentSongId ? 'translateY(0)' : 'translateY(45px)'
+                        }}
+                    >
                         <h1
                             className="font-bold uppercase tracking-[0.2em] text-6xl md:text-7xl select-none whitespace-nowrap"
                             style={{
@@ -277,7 +476,6 @@ const MusicLibraryPage = () => {
                                 setIsAllSongsView(true);
                                 setSelectedPlaylist(null);
                                 setSearchTerm('');
-                                setIsAllSongsView(true);
                                 setShowNowPlayingView(false);
                             }}
                             className={`px-6 py-2 rounded-full border transition-all duration-500 ease-out text-sm font-medium flex items-center gap-2 group ${isAllSongsView && !selectedPlaylist && !searchTerm
@@ -295,10 +493,7 @@ const MusicLibraryPage = () => {
                                     setSelectedPlaylist(null);
                                     setIsAllSongsView(true);
                                 } else {
-                                    setSelectedPlaylist({
-                                        name: 'Favorite Songs',
-                                        songs: favorites
-                                    });
+                                    setSelectedPlaylist({ name: 'Favorite Songs', songs: favorites });
                                     setIsAllSongsView(false);
                                 }
                             }}
@@ -312,250 +507,90 @@ const MusicLibraryPage = () => {
                         </button>
                     </div>
 
-                    {/* Right Panel - Song List & Now Playing */}
-                    <div className={`w-full max-w-[435px] ${currentSongId && !showNowPlayingView ? 'h-[510px]' : 'h-[635px]'} transition-all duration-700 ease-[cubic-bezier(0.23,1,0.32,1)] backdrop-blur-2xl bg-white/[0.08] border border-white/20 rounded-[28px] shadow-[0_8px_32px_rgba(0,0,0,0.3)] relative overflow-hidden mt-[0px]`}>
+                    {/* Right Panel */}
+                    <div className="w-full max-w-[435px] h-[635px] transition-all duration-700 ease-[cubic-bezier(0.23,1,0.32,1)] backdrop-blur-2xl bg-white/[0.08] border border-white/20 rounded-[28px] shadow-[0_8px_32px_rgba(0,0,0,0.3)] relative overflow-hidden">
 
                         {/* Song List View */}
                         <div className={`absolute inset-0 p-5 flex flex-col transition-all duration-700 ease-[cubic-bezier(0.23,1,0.32,1)] ${showNowPlayingView ? 'translate-x-[100%] opacity-0 scale-95 pointer-events-none' : 'translate-x-0 opacity-100 scale-100'}`}>
 
-                            {/* Panel Header */}
-                            {/* Panel Header code updated to include Date & Time */}
                             <div className="flex items-center justify-between mb-4 px-1">
                                 <div>
                                     <h3 className="text-sm font-bold text-white/70 uppercase tracking-widest">
                                         {selectedPlaylist ? selectedPlaylist.name : 'Song List'}
                                     </h3>
-                                    <p className="text-[10px] text-white/40 font-medium mt-0.5 uppercase tracking-wider">
-                                        {dateTime.toLocaleDateString([], { weekday: 'short', day: 'numeric', month: 'short' })}
-                                    </p>
-                                </div>
-                                <div className="flex flex-col items-end gap-1">
-                                    <span className="text-lg font-bold text-white/90 tabular-nums leading-none tracking-tight">
-                                        {dateTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                    </span>
                                     {selectedPlaylist && (
                                         <span className="text-[10px] text-white/30 font-medium bg-white/5 px-2 py-0.5 rounded-full border border-white/10">
                                             {filteredSongs.length} tracks
                                         </span>
                                     )}
                                 </div>
+                                <Clock />
                             </div>
 
-                            {/* Center Album Art */}
                             <div className="mb-4 flex justify-center">
                                 <div
                                     className="relative w-full max-w-[180px] aspect-square rounded-[24px] bg-cover bg-center backdrop-blur-sm border border-white/15 overflow-hidden shadow-lg transition-all duration-500"
-                                    style={{ backgroundImage: currentSong?.coverImg ? `url(${formatUrl(currentSong.coverImg)})` : 'none' }}
+                                    style={albumArtStyle}
                                 >
                                     {!currentSong?.coverImg && (
                                         <div className="absolute inset-0 flex items-center justify-center p-4">
-                                            <p
-                                                className="font-bold uppercase tracking-[0.1em] text-center select-none animate-in fade-in duration-1000"
-                                                style={{
-                                                    color: 'rgba(255, 255, 255, 0.4)',
-                                                    fontSize: 'clamp(0.8rem, 4cqw, 1.2rem)',
-                                                    textShadow: '0 2px 10px rgba(0, 0, 0, 0.3)',
-                                                    lineHeight: '1.4'
-                                                }}
-                                            >
-                                                "{quotes[quoteIndex]}"
+                                            <p className="font-bold uppercase tracking-[0.1em] text-center select-none animate-in fade-in duration-1000 text-white/40 text-[clamp(0.8rem,4cqw,1.2rem)] drop-shadow-md leading-relaxed">
+                                                "{QUOTES[quoteIndex]}"
                                             </p>
                                         </div>
                                     )}
                                 </div>
                             </div>
 
-                            {/* Song List */}
                             <div className="space-y-2 flex-1 overflow-y-auto custom-scrollbar">
                                 {filteredSongs.length > 0 ? (
-                                    filteredSongs.map((song, index) => (
+                                    filteredSongs.map((song) => (
                                         <SongItem
                                             key={song._id || song}
                                             song={song}
-                                            songName={song.title}
+                                            imageUrl={song.coverImg ? formatUrl(song.coverImg) : null}
                                             isActive={String(currentSongId) === String(song._id || song)}
-                                            isPlaying={isPlaying && String(currentSongId) === String(song._id || song)}
-                                            onClick={() => {
-                                                setCurrentSongId(song._id || song);
-                                                setIsPlaying(true);
-                                                if (isAllSongsView) setShowNowPlayingView(true);
-                                            }}
+                                            isFavorite={favorites.some(id => String(id) === String(song._id || song))}
+                                            onToggleFavorite={toggleFavorite}
+                                            onClick={handleSongClick}
                                         />
                                     ))
                                 ) : (
                                     <p className="text-white/30 text-center text-sm mt-10">
-                                        {searchTerm
-                                            ? 'No matches found'
-                                            : selectedPlaylist?.name === 'Favorite Songs'
-                                                ? 'No favorite songs yet'
-                                                : songs.length === 0
-                                                    ? 'Loading songs...'
-                                                    : 'No songs available'}
+                                        {searchTerm ? 'No matches found' : 'Loading songs...'}
                                     </p>
                                 )}
                             </div>
                         </div>
 
-                        {/* Now Playing View - EXACT PREMIUM DESIGN */}
-                        <div className={`absolute inset-0 flex flex-col items-center px-6 py-4 transition-all duration-700 ease-[cubic-bezier(0.23,1,0.32,1)] ${showNowPlayingView ? 'translate-x-0 opacity-100 scale-100 z-10' : 'translate-x-[-100%] opacity-0 scale-90 pointer-events-none z-0'}`}>
-
-                            {/* Background Glow Effect */}
-                            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[150%] h-[30%] bg-blue-500/10 blur-[100px] pointer-events-none" />
-
-                            {/* Header */}
-                            <div className="w-full flex justify-between items-center mb-4 relative z-10 px-2">
-                                <button
-                                    onClick={() => setShowNowPlayingView(false)}
-                                    className="p-2 bg-white/5 border border-white/10 hover:bg-white/10 rounded-xl transition-all"
-                                >
-                                    <ChevronLeft className="w-5 h-5 text-white" />
-                                </button>
-                                <span className="text-[10px] font-bold uppercase tracking-[0.3em] text-white/40">Now Playing</span>
-                                <button
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        toggleFavorite(currentSong?._id || currentSong);
-                                    }}
-                                    className={`p-2 rounded-xl transition-all duration-500 ${favorites.some(id => String(id) === String(currentSong?._id || currentSong))
-                                        ? 'text-red-500 bg-red-500/10 shadow-[0_0_15px_rgba(239,68,68,0.25)]'
-                                        : 'text-white/20 hover:text-white/60 hover:bg-white/5'
-                                        }`}
-                                >
-                                    <Heart
-                                        className={`w-5 h-5 transition-all duration-500 ${favorites.some(id => String(id) === String(currentSong?._id || currentSong)) ? 'fill-current scale-110 drop-shadow-[0_0_8px_rgba(239,68,68,0.6)]' : ''}`}
-                                    />
-                                </button>
-                            </div>
-
-                            {/* Album Art Container */}
-                            <div className="w-full aspect-square max-w-[190px] rounded-[28px] mb-4 overflow-hidden shadow-2xl bg-white/5 border border-white/10 flex items-center justify-center group relative transition-transform duration-500 hover:scale-[1.02]">
-                                {currentSong?.coverImg ? (
-                                    <img
-                                        src={formatUrl(currentSong.coverImg)}
-                                        alt={currentSong.title}
-                                        className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-                                    />
-                                ) : (
-                                    <div className="text-white/10 font-black text-4xl tracking-tighter italic">MUSIC</div>
-                                )}
-                                <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent pointer-events-none" />
-                            </div>
-
-                            {/* Song Info */}
-                            <div className="text-center mb-4 relative z-10 w-full px-4 min-h-[56px] flex flex-col justify-center">
-                                <h2 className="text-lg font-bold text-white mb-0.5 tracking-tight drop-shadow-md truncate">
-                                    {currentSong?.title || "Unknown Title"}
-                                </h2>
-                                <p className="text-white/50 text-sm font-medium tracking-wide truncate">
-                                    {currentSong?.artist || "Unknown Artist"}
-                                </p>
-                            </div>
-
-                            {/* Waveform Visualization */}
-                            <div className="w-full h-8 flex items-center justify-center gap-[3px] mb-4 px-4">
-                                {bars.map((bar, i) => (
-                                    <div
-                                        key={i}
-                                        className="w-[3px] bg-white rounded-full transition-all duration-300"
-                                        style={{
-                                            height: `${bar.height}%`,
-                                            opacity: progress > (i / bars.length) * 100 ? 1 : 0.15,
-                                            boxShadow: progress > (i / bars.length) * 100 ? '0 0 10px rgba(255,255,255,0.3)' : 'none'
-                                        }}
-                                    />
-                                ))}
-                            </div>
-
-                            {/* Progress Bar Container */}
-                            <div className="w-full px-4 mb-4">
-                                <div className="flex justify-between text-[9px] font-bold text-white/30 mb-1.5 tracking-widest tabular-nums uppercase">
-                                    <span>{formatTime(currentTime)}</span>
-                                    <span>{formatTime(duration)}</span>
-                                </div>
-                                <div className="relative group h-2 flex items-center">
-                                    <input
-                                        type="range"
-                                        min="0"
-                                        max="100"
-                                        step="0.1"
-                                        value={progress || 0}
-                                        onChange={(e) => handleSeek(parseFloat(e.target.value))}
-                                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-20"
-                                    />
-                                    <div className="relative w-full h-1.5 bg-white/10 rounded-full overflow-hidden">
-                                        <div
-                                            className="absolute left-0 top-0 h-full bg-white transition-all duration-100 shadow-[0_0_15_rgba(255,255,255,0.5)]"
-                                            style={{ width: `${progress}%` }}
-                                        ></div>
-                                    </div>
-                                    {/* Thumb handle indicator */}
-                                    <div
-                                        className="absolute h-3.5 w-3.5 bg-white rounded-full border-[2.5px] border-black/20 shadow-xl pointer-events-none z-10 transition-transform group-hover:scale-125"
-                                        style={{ left: `calc(${progress}% - 7px)` }}
-                                    ></div>
-                                </div>
-                            </div>
-
-                            {/* Main Controls Overlay */}
-                            <div className="w-full flex items-center justify-between px-2 mt-auto pb-4">
-                                <div className="flex items-center gap-2">
-                                    <button onClick={skipBackward} className="p-2 hover:bg-white/10 rounded-full text-white/40 hover:text-white transition-all relative group">
-                                        <RotateCcw className="w-4 h-4" />
-                                        <span className="absolute inset-0 flex items-center justify-center text-[6px] font-black mt-0.5 opacity-60">15</span>
-                                    </button>
-                                    <button
-                                        onClick={() => setIsShuffle(!isShuffle)}
-                                        className={`p-2 rounded-full transition-all ${isShuffle ? 'text-white scale-110 drop-shadow-[0_0_8px_rgba(255,255,255,0.5)]' : 'text-white/20 hover:text-white/40'}`}
-                                    >
-                                        <Shuffle className="w-4 h-4" />
-                                    </button>
-                                </div>
-
-                                <div className="flex items-center gap-3">
-                                    <button onClick={handlePrevious} className="p-2 text-white/80 hover:text-white transition-all active:scale-90">
-                                        <SkipBack className="w-6 h-6 fill-current" strokeWidth={0} />
-                                    </button>
-
-                                    <button
-                                        onClick={togglePlay}
-                                        className="w-12 h-12 rounded-full bg-white flex items-center justify-center shadow-[0_8px_24px_rgba(255,255,255,0.3)] hover:scale-105 active:scale-95 transition-all text-black"
-                                    >
-                                        {isPlaying ? (
-                                            <Pause className="w-5 h-5 fill-current" />
-                                        ) : (
-                                            <Play className="w-5 h-5 fill-current ml-1" />
-                                        )}
-                                    </button>
-
-                                    <button onClick={() => handleNext()} className="p-2 text-white/80 hover:text-white transition-all active:scale-90">
-                                        <SkipForward className="w-6 h-6 fill-current" strokeWidth={0} />
-                                    </button>
-                                </div>
-
-                                <div className="flex items-center gap-2 text-right">
-                                    <button
-                                        onClick={() => {
-                                            const next = repeatMode === 'none' ? 'all' : repeatMode === 'all' ? 'one' : 'none';
-                                            setRepeatMode(next);
-                                        }}
-                                        className={`p-2 rounded-full relative transition-all ${repeatMode !== 'none' ? 'text-white scale-110 drop-shadow-[0_0_8px_rgba(255,255,255,0.5)]' : 'text-white/20 hover:text-white/40'}`}
-                                    >
-                                        <Repeat className="w-4 h-4" />
-                                        {repeatMode === 'one' && <span className="absolute -top-1 -right-1 text-[7px] font-black bg-white text-black w-2.5 h-2.5 rounded-full flex items-center justify-center">1</span>}
-                                    </button>
-                                    <button onClick={skipForward} className="p-2 hover:bg-white/10 rounded-full text-white/40 hover:text-white transition-all relative group">
-                                        <RotateCcw className="w-4 h-4 scale-x-[-1]" />
-                                        <span className="absolute inset-0 flex items-center justify-center text-[6px] font-black mt-0.5 opacity-60">15</span>
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
+                        {/* Now Playing View */}
+                        <NowPlayingView
+                            showNowPlayingView={showNowPlayingView}
+                            setShowNowPlayingView={setShowNowPlayingView}
+                            currentSong={currentSong}
+                            favorites={favorites}
+                            toggleFavorite={toggleFavorite}
+                            formatUrl={formatUrl}
+                            progress={progress}
+                            currentTime={currentTime}
+                            duration={duration}
+                            handleSeek={handleSeek}
+                            skipBackward={skipBackward}
+                            skipForward={skipForward}
+                            isShuffle={isShuffle}
+                            setIsShuffle={setIsShuffle}
+                            handlePrevious={handlePrevious}
+                            handleNext={handleNext}
+                            togglePlay={togglePlay}
+                            isPlaying={isPlaying}
+                            repeatMode={repeatMode}
+                            setRepeatMode={setRepeatMode}
+                        />
                     </div>
 
                 </div>
             </div>
 
-            {/* Music Player Controls */}
             <MusicPlayer />
         </BackgroundWrapper>
     );
