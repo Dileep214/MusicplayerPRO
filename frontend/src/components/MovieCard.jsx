@@ -8,7 +8,7 @@ const MovieCard = ({ movieName, imageUrl, onClick, isActive = false }) => {
             className={`
                 group relative bg-white/5 hover:bg-white/10 rounded-xl p-4
                 transition-all duration-300 cursor-pointer
-                ${isActive ? 'ring-2 ring-blue-500 bg-white/10' : ''}
+                ${isActive ? 'ring-2 ring-green-500 bg-white/10' : ''}
             `}
         >
             {/* Image Container */}
@@ -28,7 +28,7 @@ const MovieCard = ({ movieName, imageUrl, onClick, isActive = false }) => {
 
                 {/* Play Button Overlay */}
                 <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
-                    <div className="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center shadow-xl transform scale-90 group-hover:scale-100 transition-transform">
+                    <div className="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center shadow-xl transform scale-90 group-hover:scale-100 transition-transform">
                         <Play className="w-6 h-6 text-white fill-current ml-0.5" />
                     </div>
                 </div>

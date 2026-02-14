@@ -89,7 +89,7 @@ const MusicPlayer = React.memo(({ onPlayerClick }) => {
                         )}
                     </div>
                     <div className="flex-1 min-w-0">
-                        <p className="text-white text-sm font-semibold truncate group-hover:text-blue-400 transition-colors">
+                        <p className="text-white text-sm font-semibold truncate group-hover:text-green-400 transition-colors">
                             {currentSong?.title || "Unknown Title"}
                         </p>
                         <p className="text-white/50 text-xs truncate">
@@ -105,7 +105,7 @@ const MusicPlayer = React.memo(({ onPlayerClick }) => {
                         <button
                             onClick={handleShuffleToggle}
                             className={`p-2 rounded-full transition-all ${isShuffle
-                                ? 'text-blue-400 hover:text-blue-300'
+                                ? 'text-green-400 hover:text-green-300'
                                 : 'text-white/40 hover:text-white/60'
                                 }`}
                             aria-label="Shuffle"
@@ -144,14 +144,14 @@ const MusicPlayer = React.memo(({ onPlayerClick }) => {
                         <button
                             onClick={handleRepeatToggle}
                             className={`p-2 rounded-full relative transition-all ${repeatMode !== 'none'
-                                ? 'text-blue-400 hover:text-blue-300'
+                                ? 'text-green-400 hover:text-green-300'
                                 : 'text-white/40 hover:text-white/60'
                                 }`}
                             aria-label="Repeat"
                         >
                             <Repeat className="w-4 h-4" />
                             {repeatMode === 'one' && (
-                                <span className="absolute -top-0.5 -right-0.5 w-3 h-3 bg-blue-500 rounded-full flex items-center justify-center text-[8px] font-bold text-white">
+                                <span className="absolute -top-0.5 -right-0.5 w-3 h-3 bg-green-500 rounded-full flex items-center justify-center text-[8px] font-bold text-white">
                                     1
                                 </span>
                             )}
@@ -176,7 +176,7 @@ const MusicPlayer = React.memo(({ onPlayerClick }) => {
                             />
                             <div className="relative w-full h-1 bg-white/10 rounded-full overflow-hidden">
                                 <div
-                                    className="absolute left-0 top-0 h-full bg-gradient-to-r from-blue-500 to-purple-500 transition-all duration-100"
+                                    className="absolute left-0 top-0 h-full bg-gradient-to-r from-green-500 to-purple-500 transition-all duration-100"
                                     style={{ width: `${progress}%` }}
                                 />
                             </div>

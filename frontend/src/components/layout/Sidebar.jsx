@@ -54,11 +54,11 @@ const Sidebar = ({ isOpen, onClose }) => {
                 {/* Logo & Close Button */}
                 <div className="flex items-center justify-between p-6 border-b border-white/10">
                     <Link to="/home" className="flex items-center gap-3 group" onClick={onClose}>
-                        <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg">
+                        <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-purple-600 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg">
                             <Music className="w-6 h-6 text-white" />
                         </div>
-                        <span className="text-xl font-black tracking-tight text-white">
-                            PRO<span className="text-blue-400">MUSIC</span>
+                        <span className="text-xl font-black tracking-tight text-white uppercase">
+                            MUSIC<span className="text-green-400">PLAYER</span>
                         </span>
                     </Link>
                     <button
@@ -89,7 +89,7 @@ const Sidebar = ({ isOpen, onClose }) => {
                                     }
                                 `}
                             >
-                                <Icon className={`w-5 h-5 ${isActive ? 'text-blue-400' : ''}`} />
+                                <Icon className={`w-5 h-5 ${isActive ? 'text-green-400' : ''}`} />
                                 <span>{link.label}</span>
                             </Link>
                         );
@@ -100,7 +100,7 @@ const Sidebar = ({ isOpen, onClose }) => {
                 {userObj && (
                     <div className="p-4 border-t border-white/10">
                         <div className="flex items-center gap-3 px-3 py-2 rounded-xl bg-white/5">
-                            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center">
+                            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-green-400 to-purple-500 flex items-center justify-center">
                                 <span className="text-white font-bold text-sm">
                                     {userObj.name?.[0]?.toUpperCase() || 'U'}
                                 </span>

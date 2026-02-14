@@ -48,7 +48,7 @@ const SongItem = React.memo(({
 
             {/* Song details */}
             <div className="flex-1 min-w-0">
-                <p className={`text-sm font-semibold truncate transition-colors ${isActive ? 'text-blue-400' : 'text-white'
+                <p className={`text-sm font-semibold truncate transition-colors ${isActive ? 'text-green-400' : 'text-white'
                     }`}>
                     {song?.title}
                 </p>

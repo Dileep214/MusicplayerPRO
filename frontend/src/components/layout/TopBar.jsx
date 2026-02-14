@@ -31,13 +31,13 @@ const TopBar = ({ onMenuClick }) => {
 
                     {showSearch && (
                         <div className="flex-1 max-w-md relative group">
-                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40 group-focus-within:text-blue-400 transition-colors pointer-events-none" />
+                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40 group-focus-within:text-green-400 transition-colors pointer-events-none" />
                             <input
                                 type="text"
                                 placeholder="Search songs, artists, playlists..."
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
-                                className="w-full bg-white/5 border border-white/10 rounded-full py-2.5 pl-11 pr-4 text-sm text-white placeholder:text-white/30 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:bg-white/10 transition-all"
+                                className="w-full bg-white/5 border border-white/10 rounded-full py-2.5 pl-11 pr-4 text-sm text-white placeholder:text-white/30 focus:outline-none focus:ring-2 focus:ring-green-500/30 focus:bg-white/10 transition-all"
                             />
                         </div>
                     )}

@@ -110,7 +110,7 @@ const AdminDashboardPage = React.memo(() => {
 
                 {/* Stats Grid */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                    <StatCard icon={Music} label="Total Songs" value={stats.totalSongs} color="bg-blue-500" />
+                    <StatCard icon={Music} label="Total Songs" value={stats.totalSongs} color="bg-green-500" />
                     <StatCard icon={Disc} label="Total Albums" value={stats.totalAlbums} color="bg-purple-500" />
                     <StatCard icon={Mic2} label="Total Artists" value={stats.totalArtists} color="bg-orange-500" />
                     <StatCard icon={Users} label="Total Users" value={stats.totalUsers} color="bg-green-500" />

@@ -71,7 +71,7 @@ const NowPlayingView = ({ onClose }) => {
                             className="w-full h-full object-cover"
                         />
                     ) : (
-                        <div className="w-full h-full bg-gradient-to-br from-blue-500/20 to-purple-600/20 flex items-center justify-center">
+                        <div className="w-full h-full bg-gradient-to-br from-green-500/20 to-purple-600/20 flex items-center justify-center">
                             <span className="text-white/20 text-6xl font-bold">MUSIC</span>
                         </div>
                     )}
@@ -124,8 +124,8 @@ const NowPlayingView = ({ onClose }) => {
                     <button
                         onClick={handleShuffleToggle}
                         className={`p-3 rounded-full transition-all ${isShuffle
-                                ? 'text-green-400 bg-green-500/20'
-                                : 'text-white/40 hover:text-white hover:bg-white/10'
+                            ? 'text-green-400 bg-green-500/20'
+                            : 'text-white/40 hover:text-white hover:bg-white/10'
                             }`}
                         aria-label="Shuffle"
                     >
@@ -163,8 +163,8 @@ const NowPlayingView = ({ onClose }) => {
                     <button
                         onClick={handleRepeatToggle}
                         className={`p-3 rounded-full relative transition-all ${repeatMode !== 'none'
-                                ? 'text-green-400 bg-green-500/20'
-                                : 'text-white/40 hover:text-white hover:bg-white/10'
+                            ? 'text-green-400 bg-green-500/20'
+                            : 'text-white/40 hover:text-white hover:bg-white/10'
                             }`}
                         aria-label="Repeat"
                     >
@@ -181,8 +181,8 @@ const NowPlayingView = ({ onClose }) => {
                 <button
                     onClick={() => toggleFavorite(currentSong._id)}
                     className={`flex items-center gap-2 px-6 py-3 rounded-full font-semibold transition-all ${isFavorite
-                            ? 'bg-green-500 text-white hover:bg-green-600'
-                            : 'bg-white/10 text-white hover:bg-white/20'
+                        ? 'bg-green-500 text-white hover:bg-green-600'
+                        : 'bg-white/10 text-white hover:bg-white/20'
                         }`}
                 >
                     <Heart className={`w-5 h-5 ${isFavorite ? 'fill-current' : ''}`} />

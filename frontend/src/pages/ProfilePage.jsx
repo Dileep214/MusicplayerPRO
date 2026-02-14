@@ -88,7 +88,7 @@ const ProfilePage = React.memo(() => {
                 <div className="bg-white/5 rounded-2xl p-8 border border-white/10">
                     <div className="flex flex-col items-center">
                         <div className="relative group">
-                            <div className="w-32 h-32 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 p-1">
+                            <div className="w-32 h-32 rounded-full bg-gradient-to-br from-green-500 to-purple-600 p-1">
                                 <div className="w-full h-full rounded-full bg-black overflow-hidden flex items-center justify-center">
                                     {profilePhoto ? (
                                         <img
@@ -107,7 +107,7 @@ const ProfilePage = React.memo(() => {
                             <button
                                 onClick={handlePhotoClick}
                                 disabled={uploading}
-                                className="absolute bottom-0 right-0 w-10 h-10 rounded-full bg-blue-500 hover:bg-blue-600 flex items-center justify-center transition-all shadow-lg disabled:opacity-50"
+                                className="absolute bottom-0 right-0 w-10 h-10 rounded-full bg-green-500 hover:bg-green-600 flex items-center justify-center transition-all shadow-lg disabled:opacity-50"
                             >
                                 {uploading ? (
                                     <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
@@ -175,7 +175,7 @@ const ProfilePage = React.memo(() => {
                                 </div>
                                 <label className="relative inline-flex items-center cursor-pointer">
                                     <input type="checkbox" className="sr-only peer" defaultChecked={setting.checked} />
-                                    <div className="w-11 h-6 bg-white/10 rounded-full peer peer-checked:bg-blue-500 peer-focus:ring-2 peer-focus:ring-blue-500/30 transition-all">
+                                    <div className="w-11 h-6 bg-white/10 rounded-full peer peer-checked:bg-green-500 peer-focus:ring-2 peer-focus:ring-green-500/30 transition-all">
                                         <div className="absolute top-0.5 left-0.5 bg-white w-5 h-5 rounded-full transition-transform peer-checked:translate-x-5"></div>
                                     </div>
                                 </label>

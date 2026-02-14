@@ -13,8 +13,8 @@ const HomePage = () => {
                 <div className="text-center max-w-2xl">
                     <div className="mb-8 flex justify-center">
                         <div className="relative">
-                            <div className="absolute inset-0 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full blur-3xl opacity-30 animate-pulse" />
-                            <div className="relative w-24 h-24 bg-gradient-to-br from-blue-500 to-purple-600 rounded-3xl flex items-center justify-center shadow-2xl">
+                            <div className="absolute inset-0 bg-gradient-to-r from-green-500 to-purple-600 rounded-full blur-3xl opacity-30 animate-pulse" />
+                            <div className="relative w-24 h-24 bg-gradient-to-br from-green-500 to-purple-600 rounded-3xl flex items-center justify-center shadow-2xl">
                                 <Music className="w-12 h-12 text-white" />
                             </div>
                         </div>
@@ -22,7 +22,7 @@ const HomePage = () => {
 
                     <h1 className="text-5xl md:text-7xl font-black text-white mb-4 tracking-tight">
                         Welcome back,
-                        <span className="block bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">
+                        <span className="block bg-gradient-to-r from-green-400 to-purple-500 bg-clip-text text-transparent">
                             {userName}
                         </span>
                     </h1>
