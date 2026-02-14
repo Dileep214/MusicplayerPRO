@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import Sidebar from './Sidebar';
 import TopBar from './TopBar';
 import NowPlayingView from '../NowPlayingView';
+import MusicPlayer from '../MusicPlayer';
+import { useMusic } from '../../context/MusicContext';
 
 const MainLayout = ({ children }) => {
     const [sidebarOpen, setSidebarOpen] = useState(false);
