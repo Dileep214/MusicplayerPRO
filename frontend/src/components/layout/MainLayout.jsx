@@ -9,9 +9,11 @@ const MainLayout = ({ children, onPlayerClick, showNowPlaying = false }) => {
     const { currentSong } = useMusic();
 
     return (
-        <div className="relative w-full h-screen overflow-hidden bg-gradient-to-br from-gray-900 via-black to-gray-900">
-            {/* Background Pattern */}
-            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-blue-900/20 via-transparent to-transparent pointer-events-none" />
+        <div className="relative w-full h-screen overflow-hidden bg-black text-white">
+            {/* Background Image */}
+            <img src="/background.jpg" alt="" className="absolute inset-0 w-full h-full object-cover opacity-60 pointer-events-none" />
+            {/* Dark overlay for readability */}
+            <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px] pointer-events-none" />
 
             {/* Sidebar */}
             <Sidebar
