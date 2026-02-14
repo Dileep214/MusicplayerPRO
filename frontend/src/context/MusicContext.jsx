@@ -264,6 +264,17 @@ export const MusicProvider = ({ children }) => {
         audioRef.current.currentTime = Math.max(0, audioRef.current.currentTime - 15);
     }, []);
 
+    const stopPlayback = useCallback(() => {
+        audioRef.current.pause();
+        audioRef.current.currentTime = 0;
+        audioRef.current.src = '';
+        setIsPlaying(false);
+        setCurrentSongId(null);
+        setCurrentTime(0);
+        setDuration(0);
+        setProgress(0);
+    }, []);
+
     // Memoize the context value to prevent unnecessary re-renders of consuming components
     const contextValue = useMemo(() => ({
         songs, setSongs,
@@ -283,14 +294,14 @@ export const MusicProvider = ({ children }) => {
         favorites, setFavorites,
         toggleFavorite,
         formatUrl,
-        togglePlay, handleNext, handlePrevious, handleSeek, skipForward, skipBackward
+        togglePlay, handleNext, handlePrevious, handleSeek, skipForward, skipBackward, stopPlayback
     }), [
         songs, playlists, currentSongId, currentSong, isPlaying,
         currentTime, duration, progress, volume, isShuffle,
         repeatMode, isAllSongsView, selectedPlaylist, searchTerm,
         showNowPlayingView, filteredSongs, favorites, toggleFavorite,
         formatUrl, togglePlay, handleNext, handlePrevious, handleSeek,
-        skipForward, skipBackward
+        skipForward, skipBackward, stopPlayback
     ]);
 
     return (

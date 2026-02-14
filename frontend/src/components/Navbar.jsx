@@ -11,7 +11,7 @@ const NAV_LINKS_BASE = [
 
 const Navbar = React.memo(() => {
     const location = useLocation();
-    const { searchTerm, setSearchTerm } = useMusic();
+    const { searchTerm, setSearchTerm, stopPlayback } = useMusic();
 
     const user = localStorage.getItem('user');
 
@@ -36,7 +36,10 @@ const Navbar = React.memo(() => {
     }, [isAdmin]);
 
     const handleSearchChange = (e) => setSearchTerm(e.target.value);
-    const handleLogout = () => localStorage.removeItem('user');
+    const handleLogout = () => {
+        stopPlayback();
+        localStorage.removeItem('user');
+    };
 
     return (
         <nav className="fixed top-0 left-0 w-full z-40 bg-black/40 backdrop-blur-xl border-b border-white/5 px-6 py-4">

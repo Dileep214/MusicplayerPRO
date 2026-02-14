@@ -1,13 +1,13 @@
 import React, { useState, useRef, useCallback, useMemo } from 'react';
-import BackgroundWrapper from '../components/BackgroundWrapper';
-import Navbar from '../components/Navbar';
+import MainLayout from '../components/layout/MainLayout';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import API_URL from '../config';
 import { useMusic } from '../context/MusicContext';
+import { Camera, User as UserIcon } from 'lucide-react';
 
 const ProfilePage = React.memo(() => {
-    const { formatUrl } = useMusic();
+    const { formatUrl, stopPlayback } = useMusic();
     const navigate = useNavigate();
 
     const userData = useMemo(() => JSON.parse(localStorage.getItem('user') || '{}'), []);
@@ -17,9 +17,10 @@ const ProfilePage = React.memo(() => {
     const fileInputRef = useRef(null);
 
     const handleLogout = useCallback(() => {
+        stopPlayback();
         localStorage.removeItem('user');
         navigate('/');
-    }, [navigate]);
+    }, [navigate, stopPlayback]);
 
     const handlePhotoClick = useCallback(() => {
         fileInputRef.current?.click();
@@ -74,23 +75,21 @@ const ProfilePage = React.memo(() => {
     );
 
     return (
-        <BackgroundWrapper>
-            <div className="w-full h-full flex flex-col items-center justify-center p-4 md:p-8">
-                <Navbar />
+        <MainLayout>
+            <div className="px-4 lg:px-6 py-6 max-w-4xl mx-auto space-y-6">
 
-                <div className="relative mt-8 w-full max-w-[95%] md:max-w-7xl max-h-[75vh] 
-                    backdrop-blur-3xl bg-white/[0.06] border border-white/20 rounded-[40px] 
-                    shadow-[0_24px_80px_rgba(0,0,0,0.5)] flex flex-col overflow-hidden"
-                >
-                    <div className="flex-1 overflow-y-auto p-6 md:p-8 space-y-6 custom-scrollbar">
-                        <div className="text-center space-y-2">
-                            <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-white">Settings</h1>
-                            <p className="text-white/50 text-sm md:text-base">Manage your account and app preferences</p>
-                        </div>
+                {/* Header */}
+                <div className="text-center mb-8">
+                    <h1 className="text-4xl font-black text-white mb-2">Profile Settings</h1>
+                    <p className="text-white/50">Manage your account and preferences</p>
+                </div>
 
-                        <div className="flex flex-col items-center group">
-                            <div className="relative pointer-events-auto">
-                                <div className="w-28 h-28 md:w-32 md:h-32 rounded-full bg-gradient-to-tr from-white/20 via-white/10 to-transparent border-2 border-white/30 flex items-center justify-center shadow-2xl transition-transform duration-500 group-hover:scale-105 overflow-hidden">
+                {/* Profile Photo Section */}
+                <div className="bg-white/5 rounded-2xl p-8 border border-white/10">
+                    <div className="flex flex-col items-center">
+                        <div className="relative group">
+                            <div className="w-32 h-32 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 p-1">
+                                <div className="w-full h-full rounded-full bg-black overflow-hidden flex items-center justify-center">
                                     {profilePhoto ? (
                                         <img
                                             src={formatUrl(profilePhoto)}
@@ -99,96 +98,109 @@ const ProfilePage = React.memo(() => {
                                             loading="lazy"
                                         />
                                     ) : (
-                                        <span className="text-4xl md:text-5xl font-bold text-white selection:bg-transparent">
+                                        <span className="text-5xl font-bold text-white">
                                             {userInitial}
                                         </span>
                                     )}
                                 </div>
-                                <button
-                                    onClick={handlePhotoClick}
-                                    disabled={uploading}
-                                    className="absolute bottom-1 right-1 w-10 h-10 rounded-full bg-white/10 border border-white/40 backdrop-blur-md flex items-center justify-center hover:bg-white/20 transition-all shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
-                                >
-                                    {uploading ? (
-                                        <svg className="w-5 h-5 text-white/90 animate-spin" fill="none" viewBox="0 0 24 24">
-                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                        </svg>
-                                    ) : (
-                                        <svg className="w-5 h-5 text-white/90" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                                        </svg>
-                                    )}
-                                </button>
-                                <input
-                                    ref={fileInputRef}
-                                    type="file"
-                                    accept="image/*"
-                                    onChange={handlePhotoChange}
-                                    className="hidden"
-                                />
                             </div>
+                            <button
+                                onClick={handlePhotoClick}
+                                disabled={uploading}
+                                className="absolute bottom-0 right-0 w-10 h-10 rounded-full bg-blue-500 hover:bg-blue-600 flex items-center justify-center transition-all shadow-lg disabled:opacity-50"
+                            >
+                                {uploading ? (
+                                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                ) : (
+                                    <Camera className="w-5 h-5 text-white" />
+                                )}
+                            </button>
+                            <input
+                                ref={fileInputRef}
+                                type="file"
+                                accept="image/*"
+                                onChange={handlePhotoChange}
+                                className="hidden"
+                            />
                         </div>
-
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div className="space-y-2">
-                                <label className="block text-white/40 text-xs uppercase tracking-widest font-bold ml-1">Name</label>
-                                <input
-                                    readOnly
-                                    type="text"
-                                    value={userData.name || 'Guest'}
-                                    className="w-full px-5 py-4 rounded-2xl bg-white/[0.04] border border-white/5 text-white/50 cursor-not-allowed font-medium select-none"
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <label className="block text-white/40 text-xs uppercase tracking-widest font-bold ml-1">Email</label>
-                                <input
-                                    readOnly
-                                    type="email"
-                                    value={userData.email || ''}
-                                    className="w-full px-5 py-4 rounded-2xl bg-white/[0.04] border border-white/5 text-white/50 cursor-not-allowed font-medium select-none"
-                                />
-                            </div>
-                        </div>
-
-                        <div className="space-y-4 pt-4">
-                            <h3 className="text-white/40 text-xs uppercase tracking-widest font-bold ml-1">Privacy & Playback</h3>
-                            <div className="space-y-3">
-                                {[
-                                    { id: 'notif', label: 'Push Notifications', desc: 'Alerts for new releases and features', checked: true },
-                                    { id: 'auto', label: 'Auto-play Next Track', desc: 'Never stop the music flow', checked: true },
-                                    { id: 'hq', label: 'High Fidelity Audio', desc: 'Stream in lossless CD quality', checked: false }
-                                ].map((setting) => (
-                                    <div key={setting.id} className="flex items-center justify-between p-5 rounded-2xl bg-white/[0.03] border border-white/5 hover:bg-white/[0.06] transition-all cursor-pointer group">
-                                        <div className="pr-4">
-                                            <p className="text-white font-semibold">{setting.label}</p>
-                                            <p className="text-white/40 text-sm font-medium">{setting.desc}</p>
-                                        </div>
-                                        <label className="relative inline-flex items-center cursor-pointer scale-110">
-                                            <input type="checkbox" className="sr-only peer" defaultChecked={setting.checked} />
-                                            <div className="w-12 h-6 bg-white/10 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[4px] after:left-[4px] after:bg-white/30 after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-white/40 peer-checked:after:bg-white"></div>
-                                        </label>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="p-8 md:p-10 bg-white/[0.02] border-t border-white/10 flex flex-col md:flex-row gap-4">
-                        <button className="flex-1 px-8 py-4 bg-white text-black rounded-2xl font-bold hover:bg-white/90 hover:scale-[1.02] active:scale-95 transition-all shadow-[0_0_30px_rgba(255,255,255,0.15)]">
-                            Save Changes
-                        </button>
-                        <button
-                            onClick={handleLogout}
-                            className="flex-1 px-8 py-4 bg-transparent border border-white/10 text-white/70 rounded-2xl font-bold hover:bg-white/5 hover:text-white transition-all active:scale-95"
-                        >
-                            Log Out
-                        </button>
+                        <p className="mt-4 text-white/40 text-sm">Click the camera icon to update your photo</p>
                     </div>
                 </div>
+
+                {/* Account Information */}
+                <div className="bg-white/5 rounded-2xl p-6 border border-white/10 space-y-4">
+                    <h2 className="text-xl font-bold text-white mb-4">Account Information</h2>
+
+                    <div className="space-y-4">
+                        <div>
+                            <label className="block text-white/40 text-xs uppercase tracking-wider font-semibold mb-2">
+                                Name
+                            </label>
+                            <input
+                                readOnly
+                                type="text"
+                                value={userData.name || 'Guest'}
+                                className="w-full px-4 py-3 rounded-lg bg-white/5 border border-white/10 text-white cursor-not-allowed"
+                            />
+                        </div>
+
+                        <div>
+                            <label className="block text-white/40 text-xs uppercase tracking-wider font-semibold mb-2">
+                                Email
+                            </label>
+                            <input
+                                readOnly
+                                type="email"
+                                value={userData.email || ''}
+                                className="w-full px-4 py-3 rounded-lg bg-white/5 border border-white/10 text-white cursor-not-allowed"
+                            />
+                        </div>
+                    </div>
+                </div>
+
+                {/* Preferences */}
+                <div className="bg-white/5 rounded-2xl p-6 border border-white/10 space-y-4">
+                    <h2 className="text-xl font-bold text-white mb-4">Playback Preferences</h2>
+
+                    <div className="space-y-3">
+                        {[
+                            { id: 'notif', label: 'Push Notifications', desc: 'Get notified about new releases', checked: true },
+                            { id: 'auto', label: 'Auto-play Next Track', desc: 'Continuous playback experience', checked: true },
+                            { id: 'hq', label: 'High Quality Audio', desc: 'Stream in higher quality', checked: false }
+                        ].map((setting) => (
+                            <div key={setting.id} className="flex items-center justify-between p-4 rounded-lg bg-white/5 hover:bg-white/10 transition-all">
+                                <div>
+                                    <p className="text-white font-semibold">{setting.label}</p>
+                                    <p className="text-white/40 text-sm">{setting.desc}</p>
+                                </div>
+                                <label className="relative inline-flex items-center cursor-pointer">
+                                    <input type="checkbox" className="sr-only peer" defaultChecked={setting.checked} />
+                                    <div className="w-11 h-6 bg-white/10 rounded-full peer peer-checked:bg-blue-500 peer-focus:ring-2 peer-focus:ring-blue-500/30 transition-all">
+                                        <div className="absolute top-0.5 left-0.5 bg-white w-5 h-5 rounded-full transition-transform peer-checked:translate-x-5"></div>
+                                    </div>
+                                </label>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+
+                {/* Actions */}
+                <div className="flex gap-4">
+                    <button className="flex-1 px-6 py-3 bg-white text-black rounded-lg font-bold hover:bg-white/90 transition-all">
+                        Save Changes
+                    </button>
+                    <button
+                        onClick={handleLogout}
+                        className="flex-1 px-6 py-3 bg-white/10 text-white rounded-lg font-bold hover:bg-white/20 border border-white/10 transition-all"
+                    >
+                        Log Out
+                    </button>
+                </div>
+
             </div>
-        </BackgroundWrapper>
+        </MainLayout>
     );
 });
 
 export default ProfilePage;
+

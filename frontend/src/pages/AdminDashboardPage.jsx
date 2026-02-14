@@ -8,13 +8,11 @@ import {
     Plus,
     Trash2,
     LayoutDashboard,
-    Search,
     ChevronRight
 } from 'lucide-react';
 import AddSongModal from '../components/AddSongModal';
 import AddAlbumModal from '../components/AddAlbumModal';
-import Navbar from '../components/Navbar';
-import BackgroundWrapper from '../components/BackgroundWrapper';
+import MainLayout from '../components/layout/MainLayout';
 import API_URL from '../config';
 import { useMusic } from '../context/MusicContext';
 
@@ -83,7 +81,7 @@ const AdminDashboardPage = React.memo(() => {
                 <Icon className={`w-6 h-6 ${color.replace('bg-', 'text-')}`} />
             </div>
             <div>
-                <p className="text-gray-400 text-sm font-medium">{label}</p>
+                <p className="text-white/40 text-sm font-medium">{label}</p>
                 <p className="text-2xl font-bold text-white">{value}</p>
             </div>
         </div>
@@ -96,21 +94,22 @@ const AdminDashboardPage = React.memo(() => {
     const handleCloseAlbumModal = useCallback(() => setIsAlbumModalOpen(false), []);
 
     return (
-        <BackgroundWrapper>
-            <Navbar />
-            <div className="pt-24 px-6 pb-12 max-w-7xl mx-auto">
-                <div className="flex items-center justify-between mb-8">
+        <MainLayout>
+            <div className="px-4 lg:px-6 py-6 space-y-8">
+
+                {/* Header */}
+                <div className="flex items-center justify-between">
                     <div>
-                        <h1 className="text-3xl font-bold text-white flex items-center gap-3">
+                        <h1 className="text-4xl font-black text-white flex items-center gap-3 mb-2">
                             <LayoutDashboard className="w-8 h-8 text-green-400" />
                             Admin Dashboard
                         </h1>
-                        <p className="text-gray-400 mt-1">Manage your music catalog and track performance</p>
+                        <p className="text-white/50">Manage your music catalog and track performance</p>
                     </div>
                 </div>
 
                 {/* Stats Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                     <StatCard icon={Music} label="Total Songs" value={stats.totalSongs} color="bg-blue-500" />
                     <StatCard icon={Disc} label="Total Albums" value={stats.totalAlbums} color="bg-purple-500" />
                     <StatCard icon={Mic2} label="Total Artists" value={stats.totalArtists} color="bg-orange-500" />
@@ -118,19 +117,27 @@ const AdminDashboardPage = React.memo(() => {
                 </div>
 
                 {/* Main Content Area */}
-                <div className="bg-white/5 border border-white/10 rounded-3xl overflow-hidden backdrop-blur-md">
-                    <div className="p-6 border-b border-white/10 flex flex-col md:flex-row md:items-center justify-between gap-4">
-                        <div className="flex items-center gap-2 p-1 bg-black/20 rounded-xl w-fit">
+                <div className="bg-white/5 border border-white/10 rounded-2xl overflow-hidden backdrop-blur-md">
+
+                    {/* Tabs and Add Button */}
+                    <div className="p-4 lg:p-6 border-b border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                        <div className="flex items-center gap-2 p-1 bg-black/20 rounded-xl w-full sm:w-fit">
                             <button
                                 onClick={handleTabChangeSongs}
-                                className={`px-6 py-2 rounded-lg font-medium transition-all duration-200 flex items-center gap-2 ${activeTab === 'songs' ? 'bg-green-500 text-[#0f0f1a] shadow-lg shadow-green-500/20' : 'text-gray-400 hover:text-white'}`}
+                                className={`flex-1 sm:flex-initial px-6 py-2 rounded-lg font-semibold transition-all duration-200 flex items-center justify-center gap-2 ${activeTab === 'songs'
+                                    ? 'bg-green-500 text-black shadow-lg shadow-green-500/30'
+                                    : 'text-white/60 hover:text-white'
+                                    }`}
                             >
                                 <Music className="w-4 h-4" />
                                 Songs
                             </button>
                             <button
                                 onClick={handleTabChangeAlbums}
-                                className={`px-6 py-2 rounded-lg font-medium transition-all duration-200 flex items-center gap-2 ${activeTab === 'albums' ? 'bg-green-500 text-[#0f0f1a] shadow-lg shadow-green-500/20' : 'text-gray-400 hover:text-white'}`}
+                                className={`flex-1 sm:flex-initial px-6 py-2 rounded-lg font-semibold transition-all duration-200 flex items-center justify-center gap-2 ${activeTab === 'albums'
+                                    ? 'bg-green-500 text-black shadow-lg shadow-green-500/30'
+                                    : 'text-white/60 hover:text-white'
+                                    }`}
                             >
                                 <Disc className="w-4 h-4" />
                                 Albums
@@ -139,13 +146,14 @@ const AdminDashboardPage = React.memo(() => {
 
                         <button
                             onClick={handleAddClick}
-                            className="bg-green-500 hover:bg-green-600 text-[#0f0f1a] font-bold px-6 py-2.5 rounded-xl flex items-center gap-2 transition-all active:scale-95 shadow-lg shadow-green-500/20"
+                            className="bg-green-500 hover:bg-green-600 text-black font-bold px-6 py-2.5 rounded-xl flex items-center justify-center gap-2 transition-all active:scale-95 shadow-lg shadow-green-500/30"
                         >
                             <Plus className="w-5 h-5" />
                             {activeTab === 'songs' ? 'Add Song' : 'Add Album'}
                         </button>
                     </div>
 
+                    {/* Table */}
                     <div className="overflow-x-auto">
                         {loading ? (
                             <div className="flex items-center justify-center p-20">
@@ -154,21 +162,21 @@ const AdminDashboardPage = React.memo(() => {
                         ) : activeTab === 'songs' ? (
                             <table className="w-full text-left border-collapse">
                                 <thead>
-                                    <tr className="text-gray-400 text-sm border-b border-white/5 uppercase tracking-wider">
-                                        <th className="px-6 py-4 font-semibold">Title</th>
-                                        <th className="px-6 py-4 font-semibold">Artist</th>
-                                        <th className="px-6 py-4 font-semibold">Release Date</th>
-                                        <th className="px-6 py-4 font-semibold text-right">Actions</th>
+                                    <tr className="text-white/40 text-sm border-b border-white/5 uppercase tracking-wider">
+                                        <th className="px-4 lg:px-6 py-4 font-semibold">Title</th>
+                                        <th className="px-4 lg:px-6 py-4 font-semibold hidden md:table-cell">Artist</th>
+                                        <th className="px-4 lg:px-6 py-4 font-semibold hidden lg:table-cell">Release Date</th>
+                                        <th className="px-4 lg:px-6 py-4 font-semibold text-right">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {songs.length === 0 ? (
                                         <tr>
-                                            <td colSpan="4" className="px-6 py-20 text-center text-gray-500">No songs found. Add some to get started!</td>
+                                            <td colSpan="4" className="px-6 py-20 text-center text-white/30">No songs found. Add some to get started!</td>
                                         </tr>
                                     ) : songs.map((song) => (
-                                        <tr key={song._id} className="border-b border-white/5 hover:bg-white/[0.02] transition-colors group">
-                                            <td className="px-6 py-4">
+                                        <tr key={song._id} className="border-b border-white/5 hover:bg-white/5 transition-colors group">
+                                            <td className="px-4 lg:px-6 py-4">
                                                 <div className="flex items-center gap-3">
                                                     <img
                                                         src={formatUrl(song.coverImg)}
@@ -176,20 +184,24 @@ const AdminDashboardPage = React.memo(() => {
                                                         loading="lazy"
                                                         className="w-10 h-10 rounded-lg object-cover shadow-lg"
                                                     />
-                                                    <span className="font-medium text-white group-hover:text-green-400 transition-colors">{song.title}</span>
+                                                    <div className="min-w-0">
+                                                        <p className="font-semibold text-white group-hover:text-green-400 transition-colors truncate">
+                                                            {song.title}
+                                                        </p>
+                                                        <p className="text-sm text-white/40 truncate md:hidden">
+                                                            {song.artist}
+                                                        </p>
+                                                    </div>
                                                 </div>
                                             </td>
-                                            <td className="px-6 py-4 text-gray-300">{song.artist}</td>
-                                            <td className="px-6 py-4 text-gray-400 flex items-center gap-2">
-                                                <div className="w-4 h-4 rounded bg-white/5 flex items-center justify-center">
-                                                    <ChevronRight className="w-3 h-3" />
-                                                </div>
+                                            <td className="px-4 lg:px-6 py-4 text-white/60 hidden md:table-cell">{song.artist}</td>
+                                            <td className="px-4 lg:px-6 py-4 text-white/40 hidden lg:table-cell">
                                                 {new Date(song.createdAt).toLocaleDateString()}
                                             </td>
-                                            <td className="px-6 py-4 text-right">
+                                            <td className="px-4 lg:px-6 py-4 text-right">
                                                 <button
                                                     onClick={() => handleDeleteSong(song._id)}
-                                                    className="p-2 text-gray-400 hover:text-red-400 hover:bg-red-400/10 rounded-lg transition-all"
+                                                    className="p-2 text-white/40 hover:text-red-400 hover:bg-red-400/10 rounded-lg transition-all"
                                                 >
                                                     <Trash2 className="w-5 h-5" />
                                                 </button>
@@ -201,21 +213,21 @@ const AdminDashboardPage = React.memo(() => {
                         ) : (
                             <table className="w-full text-left">
                                 <thead>
-                                    <tr className="text-gray-400 text-sm border-b border-white/5 uppercase tracking-wider">
-                                        <th className="px-6 py-4 font-semibold">Album</th>
-                                        <th className="px-6 py-4 font-semibold">Artist</th>
-                                        <th className="px-6 py-4 font-semibold">Release Date</th>
-                                        <th className="px-6 py-4 font-semibold text-right">Actions</th>
+                                    <tr className="text-white/40 text-sm border-b border-white/5 uppercase tracking-wider">
+                                        <th className="px-4 lg:px-6 py-4 font-semibold">Album</th>
+                                        <th className="px-4 lg:px-6 py-4 font-semibold hidden md:table-cell">Artist</th>
+                                        <th className="px-4 lg:px-6 py-4 font-semibold hidden lg:table-cell">Release Date</th>
+                                        <th className="px-4 lg:px-6 py-4 font-semibold text-right">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {albums.length === 0 ? (
                                         <tr>
-                                            <td colSpan="4" className="px-6 py-20 text-center text-gray-500">No albums found. Add some to get started!</td>
+                                            <td colSpan="4" className="px-6 py-20 text-center text-white/30">No albums found. Add some to get started!</td>
                                         </tr>
                                     ) : albums.map((album) => (
-                                        <tr key={album._id} className="border-b border-white/5 hover:bg-white/[0.02] transition-colors group">
-                                            <td className="px-6 py-4">
+                                        <tr key={album._id} className="border-b border-white/5 hover:bg-white/5 transition-colors group">
+                                            <td className="px-4 lg:px-6 py-4">
                                                 <div className="flex items-center gap-3">
                                                     <img
                                                         src={formatUrl(album.coverImg)}
@@ -223,17 +235,24 @@ const AdminDashboardPage = React.memo(() => {
                                                         loading="lazy"
                                                         className="w-10 h-10 rounded-lg object-cover shadow-lg"
                                                     />
-                                                    <span className="font-medium text-white group-hover:text-green-400 transition-colors">{album.title}</span>
+                                                    <div className="min-w-0">
+                                                        <p className="font-semibold text-white group-hover:text-green-400 transition-colors truncate">
+                                                            {album.title}
+                                                        </p>
+                                                        <p className="text-sm text-white/40 truncate md:hidden">
+                                                            {album.artist}
+                                                        </p>
+                                                    </div>
                                                 </div>
                                             </td>
-                                            <td className="px-6 py-4 text-gray-300">{album.artist}</td>
-                                            <td className="px-6 py-4 text-gray-400">
+                                            <td className="px-4 lg:px-6 py-4 text-white/60 hidden md:table-cell">{album.artist}</td>
+                                            <td className="px-4 lg:px-6 py-4 text-white/40 hidden lg:table-cell">
                                                 {new Date(album.releaseDate).toLocaleDateString()}
                                             </td>
-                                            <td className="px-6 py-4 text-right">
+                                            <td className="px-4 lg:px-6 py-4 text-right">
                                                 <button
                                                     onClick={() => handleDeleteAlbum(album._id)}
-                                                    className="p-2 text-gray-400 hover:text-red-400 hover:bg-red-400/10 rounded-lg transition-all"
+                                                    className="p-2 text-white/40 hover:text-red-400 hover:bg-red-400/10 rounded-lg transition-all"
                                                 >
                                                     <Trash2 className="w-5 h-5" />
                                                 </button>
@@ -257,7 +276,7 @@ const AdminDashboardPage = React.memo(() => {
                 onClose={handleCloseAlbumModal}
                 onAlbumAdded={fetchData}
             />
-        </BackgroundWrapper>
+        </MainLayout>
     );
 });
 

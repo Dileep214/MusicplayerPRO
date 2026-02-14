@@ -21,24 +21,39 @@ const SongItem = React.memo(({
     return (
         <div
             onClick={handleMainClick}
-            className={`group flex items-center gap-3 px-4 py-3 rounded-2xl transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] cursor-pointer border ${isActive
-                ? 'bg-white/10 border-white/20 shadow-[0_10px_30px_rgba(0,0,0,0.2)] translate-x-1'
-                : 'bg-transparent border-transparent hover:bg-white/5 hover:translate-x-1'
-                }`}
+            className={`
+                group flex items-center gap-3 px-4 py-2 rounded-lg
+                transition-all duration-200 cursor-pointer
+                ${isActive
+                    ? 'bg-white/10'
+                    : 'hover:bg-white/5'
+                }
+            `}
         >
             {/* Song thumbnail */}
-            <div
-                className={`w-11 h-11 rounded-xl bg-cover bg-center flex-shrink-0 bg-white/10 transition-all duration-700 ease-[cubic-bezier(0.23,1,0.32,1)] ${isActive ? 'scale-110 shadow-lg border border-white/20' : 'group-hover:scale-105 group-hover:shadow-md'}`}
-                style={{ backgroundImage: imageUrl ? `url(${imageUrl})` : 'none' }}
-            ></div>
+            <div className="w-12 h-12 rounded-md overflow-hidden bg-white/5 flex-shrink-0">
+                {imageUrl ? (
+                    <img
+                        src={imageUrl}
+                        alt={song?.title}
+                        className="w-full h-full object-cover"
+                        loading="lazy"
+                    />
+                ) : (
+                    <div className="w-full h-full flex items-center justify-center text-white/20 text-[10px] font-bold">
+                        MUSIC
+                    </div>
+                )}
+            </div>
 
             {/* Song details */}
-            <div className="flex-1 min-w-0 transition-all duration-500">
-                <p className={`text-sm font-semibold truncate transition-colors duration-500 ${isActive ? 'text-white' : 'text-white/60 group-hover:text-white'}`}>
+            <div className="flex-1 min-w-0">
+                <p className={`text-sm font-semibold truncate transition-colors ${isActive ? 'text-blue-400' : 'text-white'
+                    }`}>
                     {song?.title}
                 </p>
                 {song?.artist && (
-                    <p className={`text-xs truncate transition-colors duration-500 ${isActive ? 'text-white/40' : 'text-white/20 group-hover:text-white/40'}`}>
+                    <p className="text-xs text-white/40 truncate">
                         {song.artist}
                     </p>
                 )}
@@ -47,13 +62,17 @@ const SongItem = React.memo(({
             {/* Favorite Button */}
             <button
                 onClick={handleHeartClick}
-                className={`p-2 rounded-xl transition-all duration-500 ease-out ${isFavorite
-                    ? 'text-red-500 bg-red-500/10 shadow-[0_0_15px_rgba(239,68,68,0.25)]'
-                    : 'text-white/10 hover:text-white/60 hover:bg-white/10 opacity-0 group-hover:opacity-100'
-                    }`}
+                className={`
+                    p-2 rounded-full transition-all duration-200
+                    ${isFavorite
+                        ? 'text-red-500 hover:text-red-400'
+                        : 'text-white/20 hover:text-white/60 opacity-0 group-hover:opacity-100'
+                    }
+                `}
             >
                 <Heart
-                    className={`w-4 h-4 transition-all duration-700 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${isFavorite ? 'fill-current scale-110 drop-shadow-[0_0_8px_rgba(239,68,68,0.6)]' : 'scale-90 group-hover:scale-100'}`}
+                    className={`w-4 h-4 transition-all ${isFavorite ? 'fill-current' : ''
+                        }`}
                 />
             </button>
         </div>
