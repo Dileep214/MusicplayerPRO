@@ -3,7 +3,6 @@ import { useMusic } from '../context/MusicContext';
 import MainLayout from '../components/layout/MainLayout';
 import MovieCard from '../components/MovieCard';
 import SongItem from '../components/SongItem';
-import NowPlayingView from '../components/NowPlayingView';
 import API_URL from '../config';
 import { Heart, Music2 } from 'lucide-react';
 
@@ -41,7 +40,6 @@ const MusicLibraryPage = () => {
 
     const [quoteIndex, setQuoteIndex] = useState(0);
     const [activeView, setActiveView] = useState('playlists'); // 'playlists', 'playlist-detail', 'all-songs', 'favorites'
-    const [showNowPlaying, setShowNowPlaying] = useState(false);
 
     // Fetch data
     useEffect(() => {
@@ -127,11 +125,7 @@ const MusicLibraryPage = () => {
     }, [playlists, searchTerm]);
 
     return (
-        <MainLayout onPlayerClick={() => setShowNowPlaying(true)} showNowPlaying={showNowPlaying}>
-            {/* Now Playing Full Screen View */}
-            {showNowPlaying && currentSong && (
-                <NowPlayingView onClose={() => setShowNowPlaying(false)} />
-            )}
+        <MainLayout>
             <div className="px-4 lg:px-6 py-6 space-y-8">
 
                 {/* Header Section */}

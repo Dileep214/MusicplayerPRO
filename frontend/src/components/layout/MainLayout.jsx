@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 import Sidebar from './Sidebar';
 import TopBar from './TopBar';
-import MusicPlayer from '../MusicPlayer';
-import { useMusic } from '../../context/MusicContext';
+import NowPlayingView from '../NowPlayingView';
 
-const MainLayout = ({ children, onPlayerClick, showNowPlaying = false }) => {
+const MainLayout = ({ children }) => {
     const [sidebarOpen, setSidebarOpen] = useState(false);
+    const [showNowPlaying, setShowNowPlaying] = useState(false);
     const { currentSong } = useMusic();
 
     return (
@@ -14,6 +14,11 @@ const MainLayout = ({ children, onPlayerClick, showNowPlaying = false }) => {
             <img src="/background.jpg" alt="" className="absolute inset-0 w-full h-full object-cover opacity-60 pointer-events-none" />
             {/* Dark overlay for readability */}
             <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px] pointer-events-none" />
+
+            {/* Now Playing Full Screen View */}
+            {showNowPlaying && currentSong && (
+                <NowPlayingView onClose={() => setShowNowPlaying(false)} />
+            )}
 
             {/* Sidebar */}
             <Sidebar
@@ -40,7 +45,9 @@ const MainLayout = ({ children, onPlayerClick, showNowPlaying = false }) => {
                 </main>
 
                 {/* Bottom Player Bar - Hidden when Now Playing is active */}
-                {!showNowPlaying && <MusicPlayer onPlayerClick={onPlayerClick} />}
+                {!showNowPlaying && (
+                    <MusicPlayer onPlayerClick={() => setShowNowPlaying(true)} />
+                )}
             </div>
         </div>
     );
