@@ -66,7 +66,7 @@ const MusicPlayer = React.memo(({ onPlayerClick }) => {
     return (
         <div
             onClick={handlePlayerClick}
-            className="fixed bottom-0 left-0 lg:left-64 right-0 h-20 bg-black/95 backdrop-blur-xl border-t border-white/10 z-40 cursor-pointer hover:bg-black/98 transition-colors"
+            className="fixed bottom-0 left-0 lg:left-64 right-0 h-20 bg-white/[0.02] backdrop-blur-2xl border-t border-white/10 z-40 cursor-pointer hover:bg-white/[0.05] transition-colors"
         >
             <div className="h-full px-4 lg:px-6 flex items-center gap-4">
 

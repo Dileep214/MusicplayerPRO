@@ -16,7 +16,7 @@ const TopBar = ({ onMenuClick }) => {
     };
 
     return (
-        <header className="fixed top-0 left-0 lg:left-64 right-0 h-16 bg-black/40 backdrop-blur-xl border-b border-white/10 z-30 px-4 lg:px-6">
+        <header className="fixed top-0 left-0 lg:left-64 right-0 h-16 bg-white/[0.02] backdrop-blur-2xl border-b border-white/10 z-30 px-4 lg:px-6">
             <div className="h-full flex items-center justify-between gap-4">
 
                 {/* Left: Menu Button (Mobile) + Search */}
