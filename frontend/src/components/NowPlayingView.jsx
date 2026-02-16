@@ -19,7 +19,8 @@ const NowPlayingView = ({ onClose }) => {
         setRepeatMode,
         favorites,
         toggleFavorite,
-        formatUrl
+        formatUrl,
+        isBuffering
     } = useMusic();
 
     const formatTime = useCallback((time) => {
@@ -65,11 +66,23 @@ const NowPlayingView = ({ onClose }) => {
                 {/* Album Art */}
                 <div className="w-full max-w-md aspect-square mb-8 rounded-2xl overflow-hidden shadow-2xl">
                     {currentSong?.coverImg ? (
-                        <img
-                            src={formatUrl(currentSong.coverImg)}
-                            alt={currentSong.title}
-                            className="w-full h-full object-cover"
-                        />
+                        <div className="relative w-full h-full group">
+                            <img
+                                src={formatUrl(currentSong.coverImg)}
+                                alt={currentSong.title}
+                                className={`w-full h-full object-cover transition-all duration-700 ${isBuffering ? 'scale-110 blur-md opacity-50' : 'scale-100 blur-0 opacity-100'}`}
+                            />
+                            {isBuffering && (
+                                <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/40">
+                                    <div className="w-48 h-1 bg-white/10 rounded-full overflow-hidden mb-4">
+                                        <div className="h-full bg-green-500 animate-[loading_1.5s_infinite_linear]" style={{ width: '40%' }}></div>
+                                    </div>
+                                    <span className="text-white font-medium animate-pulse tracking-widest text-sm uppercase">
+                                        Please wait...
+                                    </span>
+                                </div>
+                            )}
+                        </div>
                     ) : (
                         <div className="w-full h-full bg-gradient-to-br from-green-500/20 to-purple-600/20 flex items-center justify-center">
                             <span className="text-white/20 text-6xl font-bold">MUSIC</span>

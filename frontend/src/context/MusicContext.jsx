@@ -19,6 +19,7 @@ export const MusicProvider = ({ children }) => {
     const [showNowPlayingView, setShowNowPlayingView] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
     const [favorites, setFavorites] = useState([]);
+    const [isBuffering, setIsBuffering] = useState(false);
 
     const audioRef = useRef(new Audio());
 
@@ -137,6 +138,11 @@ export const MusicProvider = ({ children }) => {
             }
         };
         const handleLoadedMetadata = () => setDuration(audio.duration);
+        const handleWaiting = () => setIsBuffering(true);
+        const handlePlaying = () => setIsBuffering(false);
+        const handleCanPlay = () => setIsBuffering(false);
+        const handleLoadStart = () => setIsBuffering(true);
+        const handleError = () => setIsBuffering(false);
 
         // Use a wrapper to ensure we have latest state for handleNext
         const handleEnded = () => {
@@ -149,11 +155,21 @@ export const MusicProvider = ({ children }) => {
         audio.addEventListener('timeupdate', handleTimeUpdate);
         audio.addEventListener('loadedmetadata', handleLoadedMetadata);
         audio.addEventListener('ended', handleEnded);
+        audio.addEventListener('waiting', handleWaiting);
+        audio.addEventListener('playing', handlePlaying);
+        audio.addEventListener('canplay', handleCanPlay);
+        audio.addEventListener('loadstart', handleLoadStart);
+        audio.addEventListener('error', handleError);
 
         return () => {
             audio.removeEventListener('timeupdate', handleTimeUpdate);
             audio.removeEventListener('loadedmetadata', handleLoadedMetadata);
             audio.removeEventListener('ended', handleEnded);
+            audio.removeEventListener('waiting', handleWaiting);
+            audio.removeEventListener('playing', handlePlaying);
+            audio.removeEventListener('canplay', handleCanPlay);
+            audio.removeEventListener('loadstart', handleLoadStart);
+            audio.removeEventListener('error', handleError);
         };
     }, [currentSongId, songs, repeatMode, isShuffle, selectedPlaylist]);
 
@@ -291,6 +307,7 @@ export const MusicProvider = ({ children }) => {
         searchTerm, setSearchTerm,
         showNowPlayingView, setShowNowPlayingView,
         filteredSongs,
+        isBuffering,
         favorites, setFavorites,
         toggleFavorite,
         formatUrl,
@@ -300,6 +317,7 @@ export const MusicProvider = ({ children }) => {
         currentTime, duration, progress, volume, isShuffle,
         repeatMode, isAllSongsView, selectedPlaylist, searchTerm,
         showNowPlayingView, filteredSongs, favorites, toggleFavorite,
+        isBuffering,
         formatUrl, togglePlay, handleNext, handlePrevious, handleSeek,
         skipForward, skipBackward, stopPlayback
     ]);

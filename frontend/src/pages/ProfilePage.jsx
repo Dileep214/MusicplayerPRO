@@ -40,12 +40,17 @@ const ProfilePage = React.memo(() => {
             return;
         }
 
+        if (!userData.id && !userData._id) {
+            alert('User ID not found. Please log in again.');
+            return;
+        }
+
         setUploading(true);
 
         try {
             const formData = new FormData();
             formData.append('profilePhoto', file);
-            formData.append('userId', userData._id);
+            formData.append('userId', userData.id || userData._id);
 
             const response = await axios.post(`${API_URL}/api/user/profile-photo`, formData, {
                 headers: {
