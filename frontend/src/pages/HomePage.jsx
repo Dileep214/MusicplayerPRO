@@ -4,7 +4,16 @@ import { Link } from 'react-router-dom';
 import { Music, Sparkles } from 'lucide-react';
 
 const HomePage = () => {
-    const userData = JSON.parse(localStorage.getItem('user') || '{}');
+    const userData = React.useMemo(() => {
+        try {
+            const user = localStorage.getItem('user');
+            if (!user || user === 'undefined') return {};
+            return JSON.parse(user);
+        } catch (error) {
+            console.error('Error parsing user data:', error);
+            return {};
+        }
+    }, []);
     const userName = userData.name || 'Guest';
 
     return (

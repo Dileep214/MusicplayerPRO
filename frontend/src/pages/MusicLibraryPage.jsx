@@ -3,8 +3,8 @@ import { useMusic } from '../context/MusicContext';
 import MainLayout from '../components/layout/MainLayout';
 import MovieCard from '../components/MovieCard';
 import SongItem from '../components/SongItem';
-import API_URL from '../config';
-import { Heart, Music2 } from 'lucide-react';
+import { Heart, Music2, RefreshCw } from 'lucide-react';
+import LoadingSkeleton from '../components/LoadingSkeleton';
 
 const QUOTES = [
     "Music is the universal language of mankind.",
@@ -14,64 +14,35 @@ const QUOTES = [
     "Without music, life would be a mistake.",
 ];
 
-const shuffleArray = (array) => {
-    if (!Array.isArray(array)) return [];
-    const shuffled = [...array];
-    for (let i = shuffled.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-    }
-    return shuffled;
-};
-
 const MusicLibraryPage = () => {
     const {
-        songs, setSongs,
-        playlists, setPlaylists,
+        songs,
+        playlists,
         currentSongId, setCurrentSongId,
-        currentSong,
         setIsPlaying,
         selectedPlaylist, setSelectedPlaylist,
         searchTerm,
         filteredSongs,
         favorites, toggleFavorite,
-        formatUrl
+        formatUrl,
+        isLoading,
+        fetchLibraryData
     } = useMusic();
 
     const [quoteIndex, setQuoteIndex] = useState(0);
     const [activeView, setActiveView] = useState('playlists'); // 'playlists', 'playlist-detail', 'all-songs', 'favorites'
+    const [showLongLoadingMessage, setShowLongLoadingMessage] = useState(false);
 
-    // Fetch data
+    // Long loading message logic
     useEffect(() => {
-        const fetchData = async () => {
-            if (songs.length > 0 && playlists.length > 0) return;
-
-            try {
-                const songsResponse = await fetch(`${API_URL}/api/songs`);
-                const songsData = await songsResponse.json();
-                setSongs(shuffleArray(songsData));
-
-                const [playlistsRes, albumsRes] = await Promise.all([
-                    fetch(`${API_URL}/api/playlists`),
-                    fetch(`${API_URL}/api/albums`)
-                ]);
-
-                const playlistsData = await playlistsRes.json();
-                const albumsData = await albumsRes.json();
-
-                const normalizedAlbums = albumsData.map(album => ({
-                    ...album,
-                    name: album.title,
-                    isAlbum: true
-                }));
-
-                setPlaylists([...playlistsData, ...normalizedAlbums]);
-            } catch (error) {
-                console.error('Error fetching data:', error);
-            }
-        };
-        fetchData();
-    }, [songs.length, playlists.length, setSongs, setPlaylists]);
+        let timeout;
+        if (isLoading) {
+            timeout = setTimeout(() => setShowLongLoadingMessage(true), 4000);
+        } else {
+            setShowLongLoadingMessage(false);
+        }
+        return () => clearTimeout(timeout);
+    }, [isLoading]);
 
     // Quote rotation
     useEffect(() => {
@@ -124,6 +95,10 @@ const MusicLibraryPage = () => {
         );
     }, [playlists, searchTerm]);
 
+    const handleRefresh = () => {
+        fetchLibraryData(true);
+    };
+
     return (
         <MainLayout>
             <div className="px-4 lg:px-6 py-6 space-y-8">
@@ -135,21 +110,30 @@ const MusicLibraryPage = () => {
                             Your Library
                         </h1>
                         <p className="text-white/50 text-sm">
-                            {displayPlaylists.length} playlists • {songs.length} songs
+                            {isLoading ? 'Loading library...' : `${displayPlaylists.length} playlists • ${songs.length} songs`}
                         </p>
                     </div>
 
                     {/* Quick Actions */}
                     <div className="flex gap-3">
                         <button
+                            onClick={handleRefresh}
+                            className={`p-2 rounded-full bg-white/10 text-white hover:bg-white/20 transition-all ${isLoading ? 'animate-spin opacity-50' : ''}`}
+                            title="Refresh Library"
+                            disabled={isLoading}
+                        >
+                            <RefreshCw className="w-5 h-5" />
+                        </button>
+                        <button
                             onClick={() => {
                                 setSelectedPlaylist(null);
                                 setActiveView('all-songs');
                             }}
+                            disabled={isLoading}
                             className={`px-4 py-2 rounded-full text-sm font-semibold transition-all ${activeView === 'all-songs'
                                 ? 'bg-green-500 text-white shadow-lg shadow-green-500/30'
                                 : 'bg-white/10 text-white hover:bg-white/20'
-                                }`}
+                                } ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
                         >
                             <Music2 className="w-4 h-4 inline mr-2" />
                             All Songs
@@ -159,10 +143,11 @@ const MusicLibraryPage = () => {
                                 setSelectedPlaylist({ name: 'Favorite Songs', songs: favorites });
                                 setActiveView('favorites');
                             }}
+                            disabled={isLoading}
                             className={`px-4 py-2 rounded-full text-sm font-semibold transition-all ${activeView === 'favorites'
                                 ? 'bg-green-500 text-white shadow-lg shadow-green-500/30'
                                 : 'bg-white/10 text-white hover:bg-white/20'
-                                }`}
+                                } ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
                         >
                             <Heart className="w-4 h-4 inline mr-2" />
                             Favorites
@@ -170,27 +155,44 @@ const MusicLibraryPage = () => {
                     </div>
                 </div>
 
+                {isLoading && showLongLoadingMessage && (
+                    <div className="bg-green-500/10 border border-green-500/20 rounded-xl p-4 text-center animate-pulse">
+                        <p className="text-green-400 text-sm font-medium">
+                            Synthesizing your experience... Waking up the server for premium performance.
+                        </p>
+                    </div>
+                )}
+
                 {/* Playlists Grid */}
                 {activeView === 'playlists' && (
                     <div>
                         <h2 className="text-2xl font-bold text-white mb-4">Playlists & Albums</h2>
-                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
-                            {displayPlaylists.length > 0 ? (
-                                displayPlaylists.map((playlist) => (
-                                    <MovieCard
-                                        key={playlist._id}
-                                        movieName={playlist.name}
-                                        imageUrl={formatUrl(playlist.imageUrl || playlist.coverImg)}
-                                        isActive={selectedPlaylist && String(selectedPlaylist._id) === String(playlist._id)}
-                                        onClick={() => handlePlaylistClick(playlist)}
-                                    />
-                                ))
-                            ) : (
-                                <p className="col-span-full text-white/30 text-center py-12">
-                                    {searchTerm ? 'No matching playlists found' : 'No playlists available'}
-                                </p>
-                            )}
-                        </div>
+                        {isLoading && playlists.length === 0 ? (
+                            <LoadingSkeleton type="playlist" count={12} />
+                        ) : (
+                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+                                {displayPlaylists.length > 0 ? (
+                                    displayPlaylists.map((playlist) => (
+                                        <MovieCard
+                                            key={playlist._id}
+                                            movieName={playlist.name}
+                                            imageUrl={formatUrl(playlist.imageUrl || playlist.coverImg)}
+                                            isActive={selectedPlaylist && String(selectedPlaylist._id) === String(playlist._id)}
+                                            onClick={() => handlePlaylistClick(playlist)}
+                                        />
+                                    ))
+                                ) : !isLoading && (
+                                    <p className="col-span-full text-white/30 text-center py-12">
+                                        {searchTerm ? 'No matching playlists found' : 'No playlists available'}
+                                    </p>
+                                )}
+                                {isLoading && playlists.length > 0 && (
+                                    <div className="col-span-full flex justify-center py-4">
+                                        <div className="w-6 h-6 border-2 border-green-500 border-t-transparent rounded-full animate-spin" />
+                                    </div>
+                                )}
+                            </div>
+                        )}
                     </div>
                 )}
 
@@ -214,14 +216,16 @@ const MusicLibraryPage = () => {
                                             selectedPlaylist?.name}
                                 </h2>
                                 <p className="text-white/50 text-sm mt-1">
-                                    {filteredSongs.length} tracks
+                                    {isLoading ? 'Counting...' : `${filteredSongs.length} tracks`}
                                 </p>
                             </div>
                         </div>
 
                         {/* Songs List */}
                         <div className="space-y-2">
-                            {filteredSongs.length > 0 ? (
+                            {isLoading && filteredSongs.length === 0 ? (
+                                <LoadingSkeleton type="song" count={10} />
+                            ) : filteredSongs.length > 0 ? (
                                 filteredSongs.map((song) => (
                                     <SongItem
                                         key={song._id || song}
@@ -233,7 +237,7 @@ const MusicLibraryPage = () => {
                                         onClick={handleSongClick}
                                     />
                                 ))
-                            ) : (
+                            ) : !isLoading && (
                                 <div className="text-center py-20">
                                     <p className="text-white/30 text-lg mb-2">
                                         {activeView === 'favorites' ? 'No favorite songs yet' : 'No songs found'}

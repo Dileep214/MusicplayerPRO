@@ -23,7 +23,7 @@ const AdminRoute = ({ children }) => {
   const userString = localStorage.getItem('user');
   let user = null;
   try {
-    user = userString ? JSON.parse(userString) : null;
+    user = (userString && userString !== 'undefined') ? JSON.parse(userString) : null;
   } catch (e) {
     console.error('Failed to parse user for AdminRoute:', e);
   }

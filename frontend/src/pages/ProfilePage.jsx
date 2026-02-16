@@ -10,7 +10,15 @@ const ProfilePage = React.memo(() => {
     const { formatUrl, stopPlayback } = useMusic();
     const navigate = useNavigate();
 
-    const userData = useMemo(() => JSON.parse(localStorage.getItem('user') || '{}'), []);
+    const userData = useMemo(() => {
+        try {
+            const user = localStorage.getItem('user');
+            if (!user || user === 'undefined') return {};
+            return JSON.parse(user);
+        } catch {
+            return {};
+        }
+    }, []);
 
     const [profilePhoto, setProfilePhoto] = useState(userData.profilePhoto || null);
     const [uploading, setUploading] = useState(false);

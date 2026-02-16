@@ -34,11 +34,22 @@ const dynamicStorage = new CloudinaryStorage({
             resource_type = 'image';
         }
 
+        let cleanName = file.originalname.split('.')[0];
+        try {
+            cleanName = decodeURIComponent(cleanName);
+        } catch (e) { }
+
+        if (cleanName.toLowerCase().includes('primary:')) {
+            cleanName = cleanName.split(/primary:/i).pop();
+        }
+
+        cleanName = cleanName.replace(/[^a-zA-Z0-9]/g, '_').slice(0, 50);
+
         return {
             folder: folder,
             resource_type: resource_type,
             allowed_formats: ['mp3', 'wav', 'ogg', 'm4a', 'flac', 'jpg', 'png', 'jpeg', 'webp'],
-            public_id: Date.now() + '-' + file.originalname.split('.')[0].replace(/ /g, '_'),
+            public_id: Date.now() + '-' + cleanName,
         };
     },
 });

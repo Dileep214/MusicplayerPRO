@@ -29,9 +29,21 @@ const AddAlbumModal = ({ isOpen, onClose, onAlbumAdded }) => {
 
             // If capturing folder name
             if (files.length > 0 && files[0].webkitRelativePath) {
-                const folderName = files[0].webkitRelativePath.split('/')[0];
-                if (folderName && !formData.title) {
-                    setFormData(prev => ({ ...prev, title: folderName }));
+                let folderName = files[0].webkitRelativePath.split('/')[0];
+                if (folderName) {
+                    try {
+                        folderName = decodeURIComponent(folderName);
+                    } catch (e) { }
+
+                    if (folderName.toLowerCase().includes('primary:')) {
+                        folderName = folderName.split(/primary:/i).pop();
+                    }
+
+                    folderName = folderName.replace(/_/g, ' ').replace(/-/g, ' ').trim();
+
+                    if (!formData.title) {
+                        setFormData(prev => ({ ...prev, title: folderName }));
+                    }
                 }
             }
         }

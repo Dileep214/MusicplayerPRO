@@ -57,7 +57,42 @@ router.post('/', (req, res, next) => {
             console.log(`Processing ${req.files['songFiles'].length} songs for album: ${title}`);
 
             const songsToInsert = req.files['songFiles'].map(file => {
-                const songTitle = file.originalname.split('.').slice(0, -1).join('.').replace(/_/g, ' ');
+                let originalName = file.originalname;
+
+                // 1. Remove extension
+                let titleParts = originalName.split('.');
+                let rawTitle = titleParts.length > 1 ? titleParts.slice(0, -1).join('.') : originalName;
+
+                // 2. Decode URL encoding (handles %20, %3A, etc.)
+                try {
+                    rawTitle = decodeURIComponent(rawTitle);
+                } catch (e) {
+                    // Fallback to manual replacement if decode fails
+                    rawTitle = rawTitle.replace(/%20/g, ' ').replace(/%3A/g, ':');
+                }
+
+                // 3. Handle common Android "primary:" prefix
+                if (rawTitle.toLowerCase().includes('primary:')) {
+                    rawTitle = rawTitle.split(/primary:/i).pop();
+                }
+
+                // 4. Clean up characters
+                let songTitle = rawTitle
+                    .replace(/_/g, ' ')
+                    .replace(/-/g, ' ')
+                    .replace(/\(\d+\)/g, '') // Remove (1), (2) etc
+                    .trim();
+
+                // 5. Capitalize words
+                songTitle = songTitle
+                    .split(' ')
+                    .filter(word => word.length > 0)
+                    .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+                    .join(' ');
+
+                // Final fallback
+                if (!songTitle) songTitle = "Track " + (req.files['songFiles'].indexOf(file) + 1);
+
                 return {
                     title: songTitle,
                     artist: artist,

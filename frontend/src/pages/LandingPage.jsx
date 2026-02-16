@@ -10,7 +10,7 @@ const LandingPage = () => {
 
     React.useEffect(() => {
         const user = localStorage.getItem('user');
-        if (user) {
+        if (user && user !== 'undefined') {
             navigate('/home');
         }
     }, [navigate]);

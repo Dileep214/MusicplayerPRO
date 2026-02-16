@@ -20,8 +20,55 @@ export const MusicProvider = ({ children }) => {
     const [searchTerm, setSearchTerm] = useState('');
     const [favorites, setFavorites] = useState([]);
     const [isBuffering, setIsBuffering] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
 
     const audioRef = useRef(new Audio());
+
+    const shuffleArray = (array) => {
+        if (!Array.isArray(array)) return [];
+        const shuffled = [...array];
+        for (let i = shuffled.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+        }
+        return shuffled;
+    };
+
+    // Global fetch for library data
+    const fetchLibraryData = useCallback(async (force = false) => {
+        if (!force && songs.length > 0 && playlists.length > 0) return;
+
+        setIsLoading(true);
+        try {
+            const songsResponse = await fetch(`${API_URL}/api/songs`);
+            const songsData = await songsResponse.json();
+            setSongs(shuffleArray(songsData));
+
+            const [playlistsRes, albumsRes] = await Promise.all([
+                fetch(`${API_URL}/api/playlists`),
+                fetch(`${API_URL}/api/albums`)
+            ]);
+
+            const playlistsData = await playlistsRes.json();
+            const albumsData = await albumsRes.json();
+
+            const normalizedAlbums = albumsData.map(album => ({
+                ...album,
+                name: album.title,
+                isAlbum: true
+            }));
+
+            setPlaylists([...playlistsData, ...normalizedAlbums]);
+        } catch (error) {
+            console.error('Error fetching library data:', error);
+        } finally {
+            setIsLoading(false);
+        }
+    }, [songs.length, playlists.length]);
+
+    useEffect(() => {
+        fetchLibraryData();
+    }, []);
 
     const currentSong = useMemo(() =>
         songs.find(s => String(s._id || s) === String(currentSongId)) || null,
@@ -59,8 +106,9 @@ export const MusicProvider = ({ children }) => {
         const fetchFavorites = async () => {
             try {
                 const userString = localStorage.getItem('user');
-                const user = userString ? JSON.parse(userString) : null;
-                if (user && user.id) {
+                if (!userString || userString === 'undefined') return;
+                const user = JSON.parse(userString);
+                if (user && (user.id || user._id)) {
                     try {
                         const response = await fetch(`${API_URL}/api/user/favorites/${user.id}`);
                         if (response.ok) {
@@ -81,7 +129,10 @@ export const MusicProvider = ({ children }) => {
     const toggleFavorite = useCallback(async (songId) => {
         let user = null;
         try {
-            user = JSON.parse(localStorage.getItem('user'));
+            const userString = localStorage.getItem('user');
+            if (userString && userString !== 'undefined') {
+                user = JSON.parse(userString);
+            }
         } catch (e) {
             console.error('Failed to parse user session:', e);
         }
@@ -144,11 +195,7 @@ export const MusicProvider = ({ children }) => {
         const handleLoadStart = () => setIsBuffering(true);
         const handleError = () => setIsBuffering(false);
 
-        // Use a wrapper to ensure we have latest state for handleNext
         const handleEnded = () => {
-            // We use a small hack here to get the latest state without re-registering
-            // Or we can just use a ref for the ended handler if needed
-            // But for now, we leave it in the dependency array
             handleNext(repeatMode === 'none' && !isShuffle);
         };
 
@@ -173,12 +220,10 @@ export const MusicProvider = ({ children }) => {
         };
     }, [currentSongId, songs, repeatMode, isShuffle, selectedPlaylist]);
 
-    // Fixed formatUrl with memoization and environment variable fix
     const formatUrl = useCallback((url) => {
         if (!url || typeof url !== 'string') return '';
         if (url.startsWith('http')) return url;
 
-        // Use import.meta.env for Vite projects
         const cloudName = import.meta.env?.VITE_CLOUDINARY_CLOUD_NAME || 'dzp9rltpr';
         if (url.startsWith('MusicPlayerPRO')) return `https://res.cloudinary.com/${cloudName}/video/upload/${url}`;
 
@@ -291,7 +336,6 @@ export const MusicProvider = ({ children }) => {
         setProgress(0);
     }, []);
 
-    // Memoize the context value to prevent unnecessary re-renders of consuming components
     const contextValue = useMemo(() => ({
         songs, setSongs,
         playlists, setPlaylists,
@@ -308,17 +352,19 @@ export const MusicProvider = ({ children }) => {
         showNowPlayingView, setShowNowPlayingView,
         filteredSongs,
         isBuffering,
+        isLoading,
         favorites, setFavorites,
         toggleFavorite,
         formatUrl,
+        fetchLibraryData,
         togglePlay, handleNext, handlePrevious, handleSeek, skipForward, skipBackward, stopPlayback
     }), [
         songs, playlists, currentSongId, currentSong, isPlaying,
         currentTime, duration, progress, volume, isShuffle,
         repeatMode, isAllSongsView, selectedPlaylist, searchTerm,
         showNowPlayingView, filteredSongs, favorites, toggleFavorite,
-        isBuffering,
-        formatUrl, togglePlay, handleNext, handlePrevious, handleSeek,
+        isBuffering, isLoading,
+        formatUrl, fetchLibraryData, togglePlay, handleNext, handlePrevious, handleSeek,
         skipForward, skipBackward, stopPlayback
     ]);
 
