@@ -21,17 +21,14 @@ const MusicPlayer = React.memo(({ onPlayerClick }) => {
         volume,
         setVolume,
         formatUrl,
+        cleanName,
+        formatTime,
         isBuffering
     } = useMusic();
 
     const navigate = useNavigate();
 
-    const formatTime = useCallback((time) => {
-        if (!time || isNaN(time)) return '0:00';
-        const minutes = Math.floor(time / 60);
-        const seconds = Math.floor(time % 60);
-        return `${minutes}:${seconds.toString().padStart(2, '0')}`;
-    }, []);
+
 
     const handleInfoClick = useCallback((e) => {
         e.stopPropagation();
@@ -99,7 +96,7 @@ const MusicPlayer = React.memo(({ onPlayerClick }) => {
                     </div>
                     <div className="flex-1 min-w-0">
                         <p className="text-white text-sm font-semibold truncate group-hover:text-green-400 transition-colors">
-                            {currentSong?.title || "Unknown Title"}
+                            {cleanName(currentSong?.title)}
                         </p>
                         <p className="text-white/50 text-xs truncate">
                             {currentSong?.artist || "Unknown Artist"}
@@ -109,6 +106,38 @@ const MusicPlayer = React.memo(({ onPlayerClick }) => {
 
                 {/* Center: Player Controls (Hidden on Mobile) */}
                 <div className="hidden md:flex flex-col items-center flex-1 gap-2 max-w-2xl" onClick={(e) => e.stopPropagation()}>
+                    {/* Progress Bar (Placed ABOVE controls as per standard, or BELOW if specifically requested. User said 'controls under the progress bar') */}
+                    <div className="w-full flex items-center gap-2 mb-1">
+                        <span className="text-[10px] text-white/40 font-medium tabular-nums min-w-[35px]">
+                            {formatTime(currentTime)}
+                        </span>
+                        <div className="flex-1 group relative h-1 flex items-center">
+                            <input
+                                type="range"
+                                min="0"
+                                max="100"
+                                step="0.1"
+                                value={progress || 0}
+                                onChange={(e) => handleSeek(parseFloat(e.target.value))}
+                                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                                aria-label="Seek"
+                            />
+                            <div className="relative w-full h-1 bg-white/10 rounded-full overflow-hidden">
+                                <div
+                                    className="absolute left-0 top-0 h-full bg-gradient-to-r from-green-500 to-purple-500 transition-all duration-100"
+                                    style={{ width: `${progress}%` }}
+                                />
+                            </div>
+                            <div
+                                className="absolute h-3 w-3 bg-white rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"
+                                style={{ left: `calc(${progress}% - 6px)` }}
+                            />
+                        </div>
+                        <span className="text-[10px] text-white/40 font-medium tabular-nums min-w-[35px] text-right">
+                            {formatTime(duration)}
+                        </span>
+                    </div>
+
                     {/* Control Buttons */}
                     <div className="flex items-center gap-4">
                         <button
@@ -165,38 +194,6 @@ const MusicPlayer = React.memo(({ onPlayerClick }) => {
                                 </span>
                             )}
                         </button>
-                    </div>
-
-                    {/* Progress Bar */}
-                    <div className="w-full flex items-center gap-2">
-                        <span className="text-[10px] text-white/40 font-medium tabular-nums min-w-[35px]">
-                            {formatTime(currentTime)}
-                        </span>
-                        <div className="flex-1 group relative h-1 flex items-center">
-                            <input
-                                type="range"
-                                min="0"
-                                max="100"
-                                step="0.1"
-                                value={progress || 0}
-                                onChange={(e) => handleSeek(parseFloat(e.target.value))}
-                                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-                                aria-label="Seek"
-                            />
-                            <div className="relative w-full h-1 bg-white/10 rounded-full overflow-hidden">
-                                <div
-                                    className="absolute left-0 top-0 h-full bg-gradient-to-r from-green-500 to-purple-500 transition-all duration-100"
-                                    style={{ width: `${progress}%` }}
-                                />
-                            </div>
-                            <div
-                                className="absolute h-3 w-3 bg-white rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"
-                                style={{ left: `calc(${progress}% - 6px)` }}
-                            />
-                        </div>
-                        <span className="text-[10px] text-white/40 font-medium tabular-nums min-w-[35px] text-right">
-                            {formatTime(duration)}
-                        </span>
                     </div>
                 </div>
 

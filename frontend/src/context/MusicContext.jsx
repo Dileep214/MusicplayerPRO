@@ -200,8 +200,10 @@ export const MusicProvider = ({ children }) => {
         const audio = audioRef.current;
         const handleTimeUpdate = () => {
             setCurrentTime(audio.currentTime);
-            if (audio.duration > 0) {
+            if (isFinite(audio.duration) && audio.duration > 0) {
                 setProgress((audio.currentTime / audio.duration) * 100);
+            } else {
+                setProgress(0);
             }
         };
         const handleLoadedMetadata = () => setDuration(audio.duration);
@@ -261,6 +263,32 @@ export const MusicProvider = ({ children }) => {
         }
 
         return absoluteUrl;
+    }, []);
+
+    const cleanName = useCallback((name) => {
+        if (!name) return "Unknown";
+        let decoded = name;
+        try {
+            decoded = decodeURIComponent(name);
+        } catch (e) { }
+
+        return decoded
+            .replace(/primary:/gi, '')
+            .replace(/songs\//gi, '')
+            .replace(/%20/g, ' ')
+            .replace(/%3A/g, ':')
+            .replace(/%2F/g, '/')
+            .split('/').pop()
+            .replace(/\.[^/.]+$/, "")
+            .replace(/_/g, ' ')
+            .trim();
+    }, []);
+
+    const formatTime = useCallback((time) => {
+        if (!time || !isFinite(time)) return '0:00';
+        const minutes = Math.floor(time / 60);
+        const seconds = Math.floor(time % 60);
+        return `${minutes}:${seconds.toString().padStart(2, '0')}`;
     }, []);
 
     useEffect(() => {
@@ -388,6 +416,8 @@ export const MusicProvider = ({ children }) => {
         favorites, setFavorites,
         toggleFavorite,
         formatUrl,
+        cleanName,
+        formatTime,
         fetchLibraryData,
         togglePlay, handleNext, handlePrevious, handleSeek, skipForward, skipBackward, stopPlayback
     }), [

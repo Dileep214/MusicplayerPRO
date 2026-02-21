@@ -1,6 +1,6 @@
 import React, { useCallback } from 'react';
 import { useMusic } from '../context/MusicContext';
-import { X, Play, Pause, SkipBack, SkipForward, Shuffle, Repeat, Heart } from 'lucide-react';
+import { ChevronLeft, Play, Pause, SkipBack, SkipForward, Shuffle, Repeat, Heart } from 'lucide-react';
 
 const NowPlayingView = ({ onClose }) => {
     const {
@@ -23,8 +23,27 @@ const NowPlayingView = ({ onClose }) => {
         isBuffering
     } = useMusic();
 
+    const cleanName = useCallback((name) => {
+        if (!name) return "Unknown";
+        let decoded = name;
+        try {
+            decoded = decodeURIComponent(name);
+        } catch (e) { }
+
+        return decoded
+            .replace(/primary:/gi, '')
+            .replace(/songs\//gi, '')
+            .replace(/%20/g, ' ')
+            .replace(/%3A/g, ':')
+            .replace(/%2F/g, '/')
+            .split('/').pop() // Get just filename if path
+            .replace(/\.[^/.]+$/, "") // Remove extension
+            .replace(/_/g, ' ')
+            .trim();
+    }, []);
+
     const formatTime = useCallback((time) => {
-        if (!time || isNaN(time)) return '0:00';
+        if (!time || !isFinite(time)) return '0:00';
         const minutes = Math.floor(time / 60);
         const seconds = Math.floor(time % 60);
         return `${minutes}:${seconds.toString().padStart(2, '0')}`;
@@ -45,16 +64,16 @@ const NowPlayingView = ({ onClose }) => {
     if (!currentSong) return null;
 
     return (
-        <div className="fixed inset-0 bg-gradient-to-b from-gray-900 via-black to-black z-50 flex flex-col">
+        <div className="fixed inset-0 bg-gradient-to-b from-gray-900 via-black to-black z-[100] flex flex-col overflow-y-auto custom-scrollbar">
             {/* Header */}
-            <div className="flex items-center justify-between p-4 lg:p-6">
+            <div className="flex items-center justify-between p-4 lg:p-6 sticky top-0 bg-black/50 backdrop-blur-md z-10 w-full">
                 <button
                     onClick={onClose}
-                    className="flex items-center gap-2 px-4 py-2 hover:bg-white/10 rounded-full transition-all text-white/80 hover:text-white"
+                    className="flex items-center gap-1.5 px-3 py-1.5 hover:bg-white/10 rounded-full transition-all text-white font-bold"
                     aria-label="Back"
                 >
-                    <X className="w-6 h-6" />
-                    <span className="text-sm font-semibold hidden sm:inline">Back</span>
+                    <ChevronLeft className="w-7 h-7" />
+                    <span>Back</span>
                 </button>
                 <h2 className="text-white/60 text-xs font-bold uppercase tracking-[0.2em]">
                     Now Playing
@@ -65,9 +84,9 @@ const NowPlayingView = ({ onClose }) => {
             </div>
 
             {/* Main Content */}
-            <div className="flex-1 flex flex-col items-center justify-center px-4 lg:px-8 pb-8">
+            <div className="flex-1 flex flex-col items-center justify-center px-4 lg:px-8 py-4">
                 {/* Album Art */}
-                <div className="w-full max-w-md aspect-square mb-8 rounded-2xl overflow-hidden shadow-2xl">
+                <div className="w-full max-w-[280px] sm:max-w-xs md:max-w-sm lg:max-w-md aspect-square mb-6 rounded-2xl overflow-hidden shadow-2xl transition-all duration-500">
                     {currentSong?.coverImg ? (
                         <div className="relative w-full h-full group">
                             <img
@@ -94,11 +113,11 @@ const NowPlayingView = ({ onClose }) => {
                 </div>
 
                 {/* Song Info */}
-                <div className="w-full max-w-2xl text-center mb-8">
-                    <h1 className="text-3xl lg:text-5xl font-black text-white mb-3 truncate">
-                        {currentSong?.title || "Unknown Title"}
+                <div className="w-full max-w-2xl text-center mb-6">
+                    <h1 className="text-2xl lg:text-4xl font-black text-white mb-2 truncate px-4">
+                        {cleanName(currentSong?.title)}
                     </h1>
-                    <p className="text-lg lg:text-xl text-white/60 truncate">
+                    <p className="text-base lg:text-lg text-white/60 truncate">
                         {currentSong?.artist || "Unknown Artist"}
                     </p>
                 </div>
