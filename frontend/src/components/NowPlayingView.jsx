@@ -50,15 +50,18 @@ const NowPlayingView = ({ onClose }) => {
             <div className="flex items-center justify-between p-4 lg:p-6">
                 <button
                     onClick={onClose}
-                    className="p-2 hover:bg-white/10 rounded-full transition-colors"
-                    aria-label="Close"
+                    className="flex items-center gap-2 px-4 py-2 hover:bg-white/10 rounded-full transition-all text-white/80 hover:text-white"
+                    aria-label="Back"
                 >
-                    <X className="w-6 h-6 text-white" />
+                    <X className="w-6 h-6" />
+                    <span className="text-sm font-semibold hidden sm:inline">Back</span>
                 </button>
-                <h2 className="text-white/60 text-sm font-semibold uppercase tracking-wider">
+                <h2 className="text-white/60 text-xs font-bold uppercase tracking-[0.2em]">
                     Now Playing
                 </h2>
-                <div className="w-10" /> {/* Spacer for centering */}
+                <div className="w-12 h-12 flex items-center justify-center">
+                    {/* Placeholder for symmetry or an options button */}
+                </div>
             </div>
 
             {/* Main Content */}
@@ -101,8 +104,8 @@ const NowPlayingView = ({ onClose }) => {
                 </div>
 
                 {/* Progress Bar */}
-                <div className="w-full max-w-2xl mb-8">
-                    <div className="relative h-2 bg-white/10 rounded-full overflow-hidden group cursor-pointer">
+                <div className="w-full max-w-2xl mb-8 space-y-3">
+                    <div className="relative h-2 bg-white/10 rounded-full group cursor-pointer">
                         <input
                             type="range"
                             min="0"
@@ -114,7 +117,7 @@ const NowPlayingView = ({ onClose }) => {
                             aria-label="Seek"
                         />
                         <div
-                            className="absolute left-0 top-0 h-full bg-gradient-to-r from-green-500 to-green-400 transition-all duration-100"
+                            className="absolute left-0 top-0 h-full bg-gradient-to-r from-green-500 to-green-400 rounded-full transition-all duration-100"
                             style={{ width: `${progress}%` }}
                         />
                         <div
@@ -122,11 +125,11 @@ const NowPlayingView = ({ onClose }) => {
                             style={{ left: `calc(${progress}% - 8px)` }}
                         />
                     </div>
-                    <div className="flex justify-between mt-2">
-                        <span className="text-sm text-white/40 font-medium tabular-nums">
+                    <div className="flex justify-between">
+                        <span className="text-xs text-white/40 font-bold tabular-nums">
                             {formatTime(currentTime)}
                         </span>
-                        <span className="text-sm text-white/40 font-medium tabular-nums">
+                        <span className="text-xs text-white/40 font-bold tabular-nums">
                             {formatTime(duration)}
                         </span>
                     </div>

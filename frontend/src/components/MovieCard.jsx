@@ -1,7 +1,7 @@
 import React from 'react';
 import { Play } from 'lucide-react';
 
-const MovieCard = ({ movieName, imageUrl, onClick, isActive = false }) => {
+const MovieCard = ({ movieName, imageUrl, onClick, isActive = false, type = 'Playlist' }) => {
     return (
         <div
             onClick={onClick}
@@ -22,7 +22,7 @@ const MovieCard = ({ movieName, imageUrl, onClick, isActive = false }) => {
                     />
                 ) : (
                     <div className="w-full h-full flex items-center justify-center text-white/20 text-xs font-bold">
-                        NO IMAGE
+                        {movieName.substring(0, 2).toUpperCase()}
                     </div>
                 )}
 
@@ -39,7 +39,7 @@ const MovieCard = ({ movieName, imageUrl, onClick, isActive = false }) => {
                 {movieName}
             </h3>
             <p className="text-white/40 text-xs">
-                Playlist
+                {type}
             </p>
         </div>
     );

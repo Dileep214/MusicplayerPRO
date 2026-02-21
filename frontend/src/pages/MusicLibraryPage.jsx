@@ -116,26 +116,28 @@ const MusicLibraryPage = () => {
 
                     {/* Quick Actions */}
                     <div className="flex gap-3">
-                        <button
-                            onClick={handleRefresh}
-                            className={`p-2 rounded-full bg-white/10 text-white hover:bg-white/20 transition-all ${isLoading ? 'animate-spin opacity-50' : ''}`}
-                            title="Refresh Library"
-                            disabled={isLoading}
-                        >
-                            <RefreshCw className="w-5 h-5" />
-                        </button>
+                        <div className="relative group">
+                            <button
+                                onClick={handleRefresh}
+                                className={`w-10 h-10 rounded-full bg-white/10 text-white hover:bg-white/20 flex items-center justify-center transition-all ${isLoading ? 'opacity-50' : 'active:scale-95'}`}
+                                title="Refresh Library"
+                                disabled={isLoading}
+                            >
+                                <RefreshCw className={`w-5 h-5 ${isLoading ? 'animate-spin' : ''}`} />
+                            </button>
+                        </div>
                         <button
                             onClick={() => {
                                 setSelectedPlaylist(null);
                                 setActiveView('all-songs');
                             }}
                             disabled={isLoading}
-                            className={`px-4 py-2 rounded-full text-sm font-semibold transition-all ${activeView === 'all-songs'
+                            className={`px-4 py-2 rounded-full text-sm font-semibold transition-all flex items-center gap-2 ${activeView === 'all-songs'
                                 ? 'bg-green-500 text-white shadow-lg shadow-green-500/30'
                                 : 'bg-white/10 text-white hover:bg-white/20'
                                 } ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
                         >
-                            <Music2 className="w-4 h-4 inline mr-2" />
+                            <Music2 className="w-4 h-4" />
                             All Songs
                         </button>
                         <button
@@ -178,6 +180,7 @@ const MusicLibraryPage = () => {
                                             movieName={playlist.name}
                                             imageUrl={formatUrl(playlist.imageUrl || playlist.coverImg)}
                                             isActive={selectedPlaylist && String(selectedPlaylist._id) === String(playlist._id)}
+                                            type={playlist.isAlbum ? 'Album' : 'Playlist'}
                                             onClick={() => handlePlaylistClick(playlist)}
                                         />
                                     ))
