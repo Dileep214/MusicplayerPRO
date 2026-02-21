@@ -34,23 +34,57 @@ export const MusicProvider = ({ children }) => {
         return shuffled;
     };
 
+    // Initialize from cache if available
+    useEffect(() => {
+        const cachedSongs = localStorage.getItem('cached_songs');
+        const cachedPlaylists = localStorage.getItem('cached_playlists');
+        const cachedFavorites = localStorage.getItem('cached_favorites');
+
+        if (cachedSongs) setSongs(JSON.parse(cachedSongs));
+        if (cachedPlaylists) setPlaylists(JSON.parse(cachedPlaylists));
+        if (cachedFavorites) setFavorites(JSON.parse(cachedFavorites));
+    }, []);
+
     // Global fetch for library data
     const fetchLibraryData = useCallback(async (force = false) => {
-        if (!force && songs.length > 0 && playlists.length > 0) return;
+        const hasData = songs.length > 0 && playlists.length > 0;
+        if (!force && hasData) return;
 
-        setIsLoading(true);
+        setIsLoading(!hasData); // Only show loader if we don't have cached data
         try {
-            const songsResponse = await fetch(`${API_URL}/api/songs`);
-            const songsData = await songsResponse.json();
-            setSongs(shuffleArray(songsData));
+            // Get user for favorites
+            let userId = null;
+            try {
+                const userString = localStorage.getItem('user');
+                if (userString && userString !== 'undefined') {
+                    const user = JSON.parse(userString);
+                    userId = user?.id || user?._id;
+                }
+            } catch (e) { }
 
-            const [playlistsRes, albumsRes] = await Promise.all([
+            const fetchPromises = [
+                fetch(`${API_URL}/api/songs`),
                 fetch(`${API_URL}/api/playlists`),
                 fetch(`${API_URL}/api/albums`)
-            ]);
+            ];
 
-            const playlistsData = await playlistsRes.json();
-            const albumsData = await albumsRes.json();
+            if (userId) {
+                fetchPromises.push(fetch(`${API_URL}/api/user/favorites/${userId}`));
+            }
+
+            const responses = await Promise.all(fetchPromises);
+
+            // Check if all responses are ok
+            if (responses.some(r => !r.ok)) throw new Error('Some requests failed');
+
+            const [songsData, playlistsData, albumsData, favoritesData] = await Promise.all(
+                responses.map(r => r.json())
+            );
+
+            // Shuffling only if it's the first load or forced
+            const processedSongs = force || !hasData ? shuffleArray(songsData) : songsData;
+            setSongs(processedSongs);
+            localStorage.setItem('cached_songs', JSON.stringify(processedSongs));
 
             const normalizedAlbums = albumsData.map(album => ({
                 ...album,
@@ -58,7 +92,15 @@ export const MusicProvider = ({ children }) => {
                 isAlbum: true
             }));
 
-            setPlaylists([...playlistsData, ...normalizedAlbums]);
+            const combinedPlaylists = [...playlistsData, ...normalizedAlbums];
+            setPlaylists(combinedPlaylists);
+            localStorage.setItem('cached_playlists', JSON.stringify(combinedPlaylists));
+
+            if (favoritesData) {
+                const favIds = favoritesData.map(f => String(f._id || f));
+                setFavorites(favIds);
+                localStorage.setItem('cached_favorites', JSON.stringify(favIds));
+            }
         } catch (error) {
             console.error('Error fetching library data:', error);
         } finally {
@@ -83,10 +125,8 @@ export const MusicProvider = ({ children }) => {
                 baseSongs = favorites.map(id => songs.find(s => String(s._id || s) === String(id))).filter(Boolean);
             } else {
                 baseSongs = (selectedPlaylist.songs || []).map(song => {
-                    if (typeof song === 'string' || song instanceof String) {
-                        return songs.find(s => String(s._id) === String(song)) || null;
-                    }
-                    return song;
+                    const sId = typeof song === 'string' ? song : song?._id;
+                    return songs.find(s => String(s._id) === String(sId)) || null;
                 }).filter(Boolean);
             }
         }
@@ -101,30 +141,6 @@ export const MusicProvider = ({ children }) => {
             return title.includes(search) || artist.includes(search);
         });
     }, [songs, selectedPlaylist, favorites, searchTerm]);
-
-    useEffect(() => {
-        const fetchFavorites = async () => {
-            try {
-                const userString = localStorage.getItem('user');
-                if (!userString || userString === 'undefined') return;
-                const user = JSON.parse(userString);
-                if (user && (user.id || user._id)) {
-                    try {
-                        const response = await fetch(`${API_URL}/api/user/favorites/${user.id}`);
-                        if (response.ok) {
-                            const data = await response.json();
-                            setFavorites(data.map(f => String(f._id || f)));
-                        }
-                    } catch (err) {
-                        console.error('Error fetching favorites:', err);
-                    }
-                }
-            } catch (e) {
-                console.error('Failed to parse user for favorites:', e);
-            }
-        };
-        fetchFavorites();
-    }, []);
 
     const toggleFavorite = useCallback(async (songId) => {
         let user = null;
@@ -220,15 +236,31 @@ export const MusicProvider = ({ children }) => {
         };
     }, [currentSongId, songs, repeatMode, isShuffle, selectedPlaylist]);
 
-    const formatUrl = useCallback((url) => {
+    const formatUrl = useCallback((url, size = 'thumbnail') => {
         if (!url || typeof url !== 'string') return '';
-        if (url.startsWith('http')) return url;
 
-        const cloudName = import.meta.env?.VITE_CLOUDINARY_CLOUD_NAME || 'dzp9rltpr';
-        if (url.startsWith('MusicPlayerPRO')) return `https://res.cloudinary.com/${cloudName}/video/upload/${url}`;
+        let absoluteUrl = url;
+        if (!url.startsWith('http')) {
+            const cloudName = import.meta.env?.VITE_CLOUDINARY_CLOUD_NAME || 'dzp9rltpr';
+            if (url.startsWith('MusicPlayerPRO')) {
+                absoluteUrl = `https://res.cloudinary.com/${cloudName}/video/upload/${url}`;
+            } else {
+                const baseUrl = API_URL.endsWith('/') ? API_URL.slice(0, -1) : API_URL;
+                absoluteUrl = `${baseUrl}${url.startsWith('/') ? '' : '/'}${url}`;
+            }
+        }
 
-        const baseUrl = API_URL.endsWith('/') ? API_URL.slice(0, -1) : API_URL;
-        return `${baseUrl}${url.startsWith('/') ? '' : '/'}${url}`;
+        // Apply Cloudinary optimization for images
+        if (absoluteUrl.includes('cloudinary.com') && (absoluteUrl.includes('/image/upload/') || absoluteUrl.includes('/video/upload/'))) {
+            // Only transform if it's an image or we want to force image-like behavior
+            if (!absoluteUrl.includes('/q_auto')) {
+                const width = size === 'large' ? '800' : '400';
+                // f_auto: best format, q_auto: best quality/size ratio, w_X: specific width
+                return absoluteUrl.replace('/upload/', `/upload/q_auto,f_auto,w_${width},c_limit/`);
+            }
+        }
+
+        return absoluteUrl;
     }, []);
 
     useEffect(() => {

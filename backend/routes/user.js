@@ -34,7 +34,7 @@ router.post('/profile-photo', upload.single('profilePhoto'), async (req, res) =>
 // GET /api/user/favorites/:userId
 router.get('/favorites/:userId', async (req, res) => {
     try {
-        const user = await User.findById(req.params.userId).populate('favorites');
+        const user = await User.findById(req.params.userId).select('favorites').lean();
         if (!user) return res.status(404).json({ message: 'User not found' });
         res.json(user.favorites);
     } catch (err) {

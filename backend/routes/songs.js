@@ -6,7 +6,7 @@ const Song = require('../models/Song');
 // GET /api/songs - Get all songs
 router.get('/', async (req, res) => {
     try {
-        const songs = await Song.find().sort({ createdAt: -1 });
+        const songs = await Song.find().sort({ createdAt: -1 }).lean();
         res.json(songs);
     } catch (err) {
         console.error(err);

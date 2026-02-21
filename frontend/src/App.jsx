@@ -39,7 +39,14 @@ const PageLoader = () => (
   </div>
 );
 
+import API_URL from './config';
+
 const App = () => {
+  React.useEffect(() => {
+    // Wake up the backend (cold start prevention)
+    fetch(API_URL).catch(() => { });
+  }, []);
+
   return (
     <MusicProvider>
       <Router>

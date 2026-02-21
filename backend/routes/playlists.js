@@ -2,10 +2,10 @@ const express = require('express');
 const router = express.Router();
 const Playlist = require('../models/Playlist');
 
-// GET /api/playlists - Get all playlists
+// GET /api/playlists - Get all playlists (no population for faster load)
 router.get('/', async (req, res) => {
     try {
-        const playlists = await Playlist.find().populate('songs').sort({ createdAt: -1 });
+        const playlists = await Playlist.find().sort({ createdAt: -1 }).lean();
         res.json(playlists);
     } catch (err) {
         console.error(err);

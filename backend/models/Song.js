@@ -9,7 +9,8 @@ const SongSchema = new mongoose.Schema({
     artist: {
         type: String,
         required: true,
-        trim: true
+        trim: true,
+        index: true
     },
     album: {
         type: String,
@@ -33,7 +34,8 @@ const SongSchema = new mongoose.Schema({
     },
     createdAt: {
         type: Date,
-        default: Date.now
+        default: Date.now,
+        index: true
     }
 });
 

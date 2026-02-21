@@ -4,10 +4,10 @@ const multer = require('multer');
 const { upload } = require('../utils/cloudinary');
 const Album = require('../models/Album');
 
-// GET /api/albums - Get all albums
+// GET /api/albums - Get all albums (no population for faster load)
 router.get('/', async (req, res) => {
     try {
-        const albums = await Album.find().populate('songs').sort({ createdAt: -1 });
+        const albums = await Album.find().sort({ createdAt: -1 }).lean();
         res.json(albums);
     } catch (err) {
         console.error(err);

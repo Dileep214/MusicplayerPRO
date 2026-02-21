@@ -15,7 +15,10 @@ const userRoutes = require('./routes/user');
 
 const path = require('path');
 
+const compression = require('compression');
+
 // Middleware
+app.use(compression());
 app.use(cors());
 app.use(express.json());
 
