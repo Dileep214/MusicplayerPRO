@@ -25,6 +25,7 @@ const MusicLibraryPage = () => {
         filteredSongs,
         favorites, toggleFavorite,
         formatUrl,
+        cleanName,
         isLoading,
         fetchLibraryData
     } = useMusic();
@@ -177,7 +178,7 @@ const MusicLibraryPage = () => {
                                     displayPlaylists.map((playlist) => (
                                         <MovieCard
                                             key={playlist._id}
-                                            movieName={playlist.name}
+                                            movieName={cleanName(playlist.name)}
                                             imageUrl={formatUrl(playlist.imageUrl || playlist.coverImg)}
                                             isActive={selectedPlaylist && String(selectedPlaylist._id) === String(playlist._id)}
                                             type={playlist.isAlbum ? 'Album' : 'Playlist'}
@@ -216,7 +217,7 @@ const MusicLibraryPage = () => {
                                 <h2 className="text-3xl font-black text-white">
                                     {activeView === 'favorites' ? 'Favorite Songs' :
                                         activeView === 'all-songs' ? 'All Songs' :
-                                            selectedPlaylist?.name}
+                                            cleanName(selectedPlaylist?.name)}
                                 </h2>
                                 <p className="text-white/50 text-sm mt-1">
                                     {isLoading ? 'Counting...' : `${filteredSongs.length} tracks`}

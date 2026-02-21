@@ -17,7 +17,7 @@ import API_URL from '../config';
 import { useMusic } from '../context/MusicContext';
 
 const AdminDashboardPage = React.memo(() => {
-    const { formatUrl } = useMusic();
+    const { formatUrl, cleanName } = useMusic();
     const [stats, setStats] = useState({
         totalSongs: 0,
         totalAlbums: 0,
@@ -186,7 +186,7 @@ const AdminDashboardPage = React.memo(() => {
                                                     />
                                                     <div className="min-w-0">
                                                         <p className="font-semibold text-white group-hover:text-green-400 transition-colors truncate">
-                                                            {song.title}
+                                                            {cleanName(song.title)}
                                                         </p>
                                                         <p className="text-sm text-white/40 truncate md:hidden">
                                                             {song.artist}
@@ -237,7 +237,7 @@ const AdminDashboardPage = React.memo(() => {
                                                     />
                                                     <div className="min-w-0">
                                                         <p className="font-semibold text-white group-hover:text-green-400 transition-colors truncate">
-                                                            {album.title}
+                                                            {cleanName(album.title)}
                                                         </p>
                                                         <p className="text-sm text-white/40 truncate md:hidden">
                                                             {album.artist}

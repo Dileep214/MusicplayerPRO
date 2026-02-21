@@ -1,5 +1,6 @@
 import React, { useCallback } from 'react';
 import { Heart } from 'lucide-react';
+import { useMusic } from '../context/MusicContext';
 
 const SongItem = React.memo(({
     song,
@@ -9,6 +10,8 @@ const SongItem = React.memo(({
     onToggleFavorite,
     imageUrl
 }) => {
+    const { cleanName } = useMusic();
+
     const handleMainClick = useCallback(() => {
         onClick(song);
     }, [onClick, song]);
@@ -35,7 +38,7 @@ const SongItem = React.memo(({
                 {imageUrl ? (
                     <img
                         src={imageUrl}
-                        alt={song?.title}
+                        alt={cleanName(song?.title)}
                         className="w-full h-full object-cover"
                         loading="lazy"
                     />
@@ -50,7 +53,7 @@ const SongItem = React.memo(({
             <div className="flex-1 min-w-0">
                 <p className={`text-sm font-semibold truncate transition-colors ${isActive ? 'text-green-400' : 'text-white'
                     }`}>
-                    {song?.title}
+                    {cleanName(song?.title)}
                 </p>
                 {song?.artist && (
                     <p className="text-xs text-white/40 truncate">
