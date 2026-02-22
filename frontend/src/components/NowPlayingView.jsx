@@ -123,8 +123,14 @@ const NowPlayingView = ({ onClose }) => {
                 </div>
 
                 {/* Progress Bar */}
-                <div className="w-full max-w-2xl mb-8 space-y-3">
-                    <div className="relative h-2 bg-white/10 rounded-full group cursor-pointer">
+                <div className="w-full max-w-2xl mb-8">
+                    <div className="relative h-6 flex items-center group cursor-pointer">
+                        <div className="absolute left-0 right-0 h-1.5 bg-white/10 rounded-full overflow-hidden">
+                            <div
+                                className="h-full bg-gradient-to-r from-green-500 to-green-400 rounded-full transition-all duration-100"
+                                style={{ width: `${progress}%` }}
+                            />
+                        </div>
                         <input
                             type="range"
                             min="0"
@@ -132,15 +138,11 @@ const NowPlayingView = ({ onClose }) => {
                             step="0.1"
                             value={progress || 0}
                             onChange={(e) => handleSeek(parseFloat(e.target.value))}
-                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-20"
                             aria-label="Seek"
                         />
                         <div
-                            className="absolute left-0 top-0 h-full bg-gradient-to-r from-green-500 to-green-400 rounded-full transition-all duration-100"
-                            style={{ width: `${progress}%` }}
-                        />
-                        <div
-                            className="absolute h-4 w-4 bg-white rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none -translate-y-1/4"
+                            className="absolute h-4 w-4 bg-white rounded-full shadow-lg opacity-0 group-hover:opacity-100 md:group-hover:opacity-100 transition-opacity pointer-events-none"
                             style={{ left: `calc(${progress}% - 8px)` }}
                         />
                     </div>

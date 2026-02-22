@@ -4,6 +4,8 @@ import GlassCard from '../components/GlassCard';
 import InputField from '../components/InputField';
 import Button from '../components/Button';
 import AuthNavbar from '../components/AuthNavbar';
+import { GoogleLogin } from '@react-oauth/google';
+import { jwtDecode } from 'jwt-decode';
 import { useNavigate } from 'react-router-dom';
 import API_URL from '../config';
 
@@ -19,6 +21,35 @@ const SignUpPage = () => {
 
     const handleChange = (e) => {
         setFormData({ ...formData, [e.target.id]: e.target.value });
+    };
+
+    const handleGoogleSuccess = async (credentialResponse) => {
+        try {
+            const decoded = jwtDecode(credentialResponse.credential);
+
+            // Send to backend
+            const res = await fetch(`${API_URL}/api/auth/google-login`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    name: decoded.name,
+                    email: decoded.email,
+                    googleId: decoded.sub,
+                    profilePhoto: decoded.picture
+                })
+            });
+
+            const data = await res.json();
+            if (res.ok) {
+                localStorage.setItem('user', JSON.stringify(data.user));
+                navigate('/home');
+            } else {
+                alert(data.message || 'Google signup failed');
+            }
+        } catch (err) {
+            console.error('Google Auth Error:', err);
+            alert('Google authentication failed. Please try again.');
+        }
     };
 
     const handleSubmit = async (e) => {
@@ -94,9 +125,23 @@ const SignUpPage = () => {
 
                     {/* Footer/Divider */}
                     <div className="mt-8 pt-6 border-t border-white/10 text-center">
-                        <p className="text-xs text-white/40">
-                            By signing up, you agree to our Terms & Conditions
-                        </p>
+                        <div className="flex flex-col items-center gap-4">
+                            <div className="w-full flex justify-center">
+                                <GoogleLogin
+                                    onSuccess={handleGoogleSuccess}
+                                    onError={() => {
+                                        console.log('Login Failed');
+                                        alert('Google login failed');
+                                    }}
+                                    theme="filled_black"
+                                    shape="pill"
+                                    text="signup_with"
+                                />
+                            </div>
+                            <p className="text-xs text-white/40">
+                                By signing up, you agree to our Terms & Conditions
+                            </p>
+                        </div>
                     </div>
                 </GlassCard>
             </div>

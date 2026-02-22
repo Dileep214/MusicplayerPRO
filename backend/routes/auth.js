@@ -89,4 +89,56 @@ router.post('/login', async (req, res) => {
     }
 });
 
+// POST /api/auth/google-login
+router.post('/google-login', async (req, res) => {
+    try {
+        const { name, email, googleId, profilePhoto } = req.body;
+
+        if (!email || !googleId) {
+            return res.status(400).json({ message: 'Missing Google user info' });
+        }
+
+        // Check if user already exists
+        let user = await User.findOne({ email });
+
+        if (user) {
+            // Update googleId if not present (case where user signed up via email first)
+            if (!user.googleId) {
+                user.googleId = googleId;
+                user.isGoogleAccount = true;
+                if (!user.profilePhoto && profilePhoto) {
+                    user.profilePhoto = profilePhoto;
+                }
+                await user.save();
+            }
+        } else {
+            // Create new Google user
+            user = new User({
+                name: name || email.split('@')[0],
+                email,
+                googleId,
+                isGoogleAccount: true,
+                profilePhoto: profilePhoto || null,
+                role: email.toLowerCase() === 'dileepkomarthi@gmail.com' ? 'admin' : 'user'
+            });
+            await user.save();
+        }
+
+        res.json({
+            message: 'Google login successful',
+            user: {
+                id: user.id || user._id,
+                name: user.name,
+                email: user.email,
+                role: user.role,
+                profilePhoto: user.profilePhoto
+            }
+        });
+
+    } catch (err) {
+        console.error('Google login error:', err);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
 module.exports = router;

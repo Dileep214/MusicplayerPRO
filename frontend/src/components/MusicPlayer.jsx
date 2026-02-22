@@ -67,13 +67,21 @@ const MusicPlayer = React.memo(({ onPlayerClick }) => {
             className="fixed bottom-0 left-0 lg:left-64 right-0 h-20 bg-white/[0.02] backdrop-blur-2xl border-t border-white/10 z-40 cursor-pointer hover:bg-white/[0.05] transition-colors"
         >
             {isBuffering && (
-                <div className="absolute top-0 left-0 right-0 h-0.5 bg-white/10 overflow-hidden">
+                <div className="absolute top-0 left-0 right-0 h-0.5 bg-white/10 overflow-hidden z-50">
                     <div className="h-full bg-green-500 animate-[loading_1.5s_infinite_linear]" style={{ width: '30%' }}></div>
                     <div className="absolute top-2 left-1/2 -translate-x-1/2 text-[10px] text-green-400 font-medium animate-pulse">
                         Please wait...
                     </div>
                 </div>
             )}
+
+            {/* Mobile Progress Bar (Slim, at the top) */}
+            <div className="absolute top-0 left-0 right-0 h-0.5 bg-white/5 md:hidden z-40">
+                <div
+                    className="h-full bg-gradient-to-r from-green-500 to-purple-500 transition-all duration-300"
+                    style={{ width: `${progress}%` }}
+                />
+            </div>
             <div className={`h-full px-4 lg:px-6 flex items-center gap-4 ${isBuffering ? 'opacity-50' : ''}`}>
 
                 {/* Left: Song Info */}
