@@ -2,11 +2,12 @@ const express = require('express');
 const router = express.Router();
 const User = require('../models/User');
 const { upload } = require('../utils/cloudinary');
+const { authenticateToken } = require('../utils/auth');
 
 // POST /api/user/profile-photo
-router.post('/profile-photo', upload.single('profilePhoto'), async (req, res) => {
+router.post('/profile-photo', authenticateToken, upload.single('profilePhoto'), async (req, res) => {
     try {
-        const { userId } = req.body;
+        const userId = req.user.id;
 
         if (!req.file) {
             return res.status(400).json({ message: 'No file uploaded' });
@@ -31,10 +32,10 @@ router.post('/profile-photo', upload.single('profilePhoto'), async (req, res) =>
     }
 });
 
-// GET /api/user/favorites/:userId
-router.get('/favorites/:userId', async (req, res) => {
+// GET /api/user/favorites
+router.get('/favorites', authenticateToken, async (req, res) => {
     try {
-        const user = await User.findById(req.params.userId).select('favorites').lean();
+        const user = await User.findById(req.user.id).select('favorites').lean();
         if (!user) return res.status(404).json({ message: 'User not found' });
         res.json(user.favorites);
     } catch (err) {
@@ -43,10 +44,10 @@ router.get('/favorites/:userId', async (req, res) => {
 });
 
 // POST /api/user/favorites/toggle
-router.post('/favorites/toggle', async (req, res) => {
+router.post('/favorites/toggle', authenticateToken, async (req, res) => {
     try {
-        const { userId, songId } = req.body;
-        const user = await User.findById(userId);
+        const { songId } = req.body;
+        const user = await User.findById(req.user.id);
         if (!user) return res.status(404).json({ message: 'User not found' });
 
         const favorites = user.favorites.map(f => f.toString());

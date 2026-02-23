@@ -1,7 +1,27 @@
 const express = require('express');
 const router = express.Router();
+const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const User = require('../models/User');
+
+const ACCESS_TOKEN_EXPIRY = '15m';
+const REFRESH_TOKEN_EXPIRY = '7d';
+
+const generateAccessToken = (user) => {
+    return jwt.sign(
+        { id: user._id, email: user.email, role: user.role },
+        process.env.ACCESS_TOKEN_SECRET || 'access_secret_123',
+        { expiresIn: ACCESS_TOKEN_EXPIRY }
+    );
+};
+
+const generateRefreshToken = (user) => {
+    return jwt.sign(
+        { id: user._id },
+        process.env.REFRESH_TOKEN_SECRET || 'refresh_secret_123',
+        { expiresIn: REFRESH_TOKEN_EXPIRY }
+    );
+};
 
 // POST /api/auth/signup
 router.post('/signup', async (req, res) => {
@@ -72,9 +92,18 @@ router.post('/login', async (req, res) => {
             return res.status(400).json({ message: 'Invalid credentials' });
         }
 
-        // 4. Success (In a real app, you'd generate a JWT token here)
+        // 4. Success - Generate Tokens
+        const accessToken = generateAccessToken(user);
+        const refreshToken = generateRefreshToken(user);
+
+        // Save refresh token to user
+        user.refreshTokens.push(refreshToken);
+        await user.save();
+
         res.json({
             message: 'Login successful',
+            accessToken,
+            refreshToken,
             user: {
                 id: user.id,
                 name: user.name,
@@ -85,6 +114,81 @@ router.post('/login', async (req, res) => {
 
     } catch (err) {
         console.error(err);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+// POST /api/auth/refresh
+// Implements Refresh Token Rotation
+router.post('/refresh', async (req, res) => {
+    const { refreshToken } = req.body;
+
+    if (!refreshToken) {
+        return res.status(401).json({ message: 'Refresh token required' });
+    }
+
+    try {
+        // 1. Find user with this token
+        const user = await User.findOne({ refreshTokens: refreshToken });
+
+        if (!user) {
+            // Token Reuse Detection!
+            // If the token is valid but NOT in our database, someone might be reusing it.
+            // In a production app, you might want to invalidate ALL tokens for this user.
+            try {
+                const decoded = jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET || 'refresh_secret_123');
+                const hackedUser = await User.findById(decoded.id);
+                if (hackedUser) {
+                    hackedUser.refreshTokens = []; // Clear all tokens
+                    await hackedUser.save();
+                }
+            } catch (e) { }
+            return res.status(403).json({ message: 'Invalid or expired refresh token' });
+        }
+
+        // 2. Verify token
+        let decoded;
+        try {
+            decoded = jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET || 'refresh_secret_123');
+        } catch (err) {
+            // Remove invalid token
+            user.refreshTokens = user.refreshTokens.filter(t => t !== refreshToken);
+            await user.save();
+            return res.status(403).json({ message: 'Invalid or expired refresh token' });
+        }
+
+        // 3. Token Rotation: Issue new tokens and remove old ones
+        const newAccessToken = generateAccessToken(user);
+        const newRefreshToken = generateRefreshToken(user);
+
+        // Replace old token with new one
+        user.refreshTokens = user.refreshTokens.filter(t => t !== refreshToken);
+        user.refreshTokens.push(newRefreshToken);
+        await user.save();
+
+        res.json({
+            accessToken: newAccessToken,
+            refreshToken: newRefreshToken
+        });
+
+    } catch (err) {
+        console.error('Refresh token error:', err);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+// POST /api/auth/logout
+router.post('/logout', async (req, res) => {
+    const { refreshToken } = req.body;
+    try {
+        if (refreshToken) {
+            await User.updateOne(
+                { refreshTokens: refreshToken },
+                { $pull: { refreshTokens: refreshToken } }
+            );
+        }
+        res.json({ message: 'Logged out successfully' });
+    } catch (err) {
         res.status(500).json({ message: 'Server error' });
     }
 });
@@ -102,7 +206,7 @@ router.post('/google-login', async (req, res) => {
         let user = await User.findOne({ email });
 
         if (user) {
-            // Update googleId if not present (case where user signed up via email first)
+            // Update googleId if not present
             if (!user.googleId) {
                 user.googleId = googleId;
                 user.isGoogleAccount = true;
@@ -124,8 +228,17 @@ router.post('/google-login', async (req, res) => {
             await user.save();
         }
 
+        // Generate Tokens
+        const accessToken = generateAccessToken(user);
+        const refreshToken = generateRefreshToken(user);
+
+        user.refreshTokens.push(refreshToken);
+        await user.save();
+
         res.json({
             message: 'Google login successful',
+            accessToken,
+            refreshToken,
             user: {
                 id: user.id || user._id,
                 name: user.name,

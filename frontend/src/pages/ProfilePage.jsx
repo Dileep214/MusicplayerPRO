@@ -1,7 +1,7 @@
 import React, { useState, useRef, useCallback, useMemo } from 'react';
 import MainLayout from '../components/layout/MainLayout';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import api from '../api';
 import API_URL from '../config';
 import { useMusic } from '../context/MusicContext';
 import { Camera, User as UserIcon } from 'lucide-react';
@@ -27,6 +27,8 @@ const ProfilePage = React.memo(() => {
     const handleLogout = useCallback(() => {
         stopPlayback();
         localStorage.removeItem('user');
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('refreshToken');
         navigate('/');
     }, [navigate, stopPlayback]);
 
@@ -60,7 +62,7 @@ const ProfilePage = React.memo(() => {
             formData.append('profilePhoto', file);
             formData.append('userId', userData.id || userData._id);
 
-            const response = await axios.post(`${API_URL}/api/user/profile-photo`, formData, {
+            const response = await api.post(`/api/user/profile-photo`, formData, {
                 headers: {
                     'Content-Type': 'multipart/form-data'
                 }

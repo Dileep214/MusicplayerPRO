@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { X, Upload, Music, Mic, Clock, Disc } from 'lucide-react';
-import axios from 'axios';
+import api from '../api';
 import API_URL from '../config';
 
 const AddSongModal = ({ isOpen, onClose, onSongAdded }) => {
@@ -43,7 +43,7 @@ const AddSongModal = ({ isOpen, onClose, onSongAdded }) => {
         if (coverImgFile) data.append('coverImgFile', coverImgFile);
 
         try {
-            const response = await axios.post(`${API_URL}/api/songs`, data, {
+            const response = await api.post(`/api/songs`, data, {
                 headers: {
                     'Content-Type': 'multipart/form-data'
                 }

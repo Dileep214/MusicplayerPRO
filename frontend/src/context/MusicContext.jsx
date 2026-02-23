@@ -1,9 +1,11 @@
 import React, { createContext, useContext, useState, useRef, useEffect, useMemo, useCallback } from 'react';
+import api from '../api';
 import API_URL from '../config';
 
 const MusicContext = createContext();
 
 export const MusicProvider = ({ children }) => {
+    // ... state ... (lines 7-23)
     const [songs, setSongs] = useState([]);
     const [playlists, setPlaylists] = useState([]);
     const [currentSongId, setCurrentSongId] = useState(null);
@@ -13,7 +15,7 @@ export const MusicProvider = ({ children }) => {
     const [progress, setProgress] = useState(0);
     const [volume, setVolume] = useState(0.7);
     const [isShuffle, setIsShuffle] = useState(false);
-    const [repeatMode, setRepeatMode] = useState('none'); // 'none', 'all', 'one'
+    const [repeatMode, setRepeatMode] = useState('none');
     const [isAllSongsView, setIsAllSongsView] = useState(false);
     const [selectedPlaylist, setSelectedPlaylist] = useState(null);
     const [showNowPlayingView, setShowNowPlayingView] = useState(false);
@@ -50,36 +52,26 @@ export const MusicProvider = ({ children }) => {
         const hasData = songs.length > 0 && playlists.length > 0;
         if (!force && hasData) return;
 
-        setIsLoading(!hasData); // Only show loader if we don't have cached data
+        setIsLoading(!hasData);
         try {
-            // Get user for favorites
-            let userId = null;
-            try {
-                const userString = localStorage.getItem('user');
-                if (userString && userString !== 'undefined') {
-                    const user = JSON.parse(userString);
-                    userId = user?.id || user?._id;
-                }
-            } catch (e) { }
-
             const fetchPromises = [
-                fetch(`${API_URL}/api/songs`),
-                fetch(`${API_URL}/api/playlists`),
-                fetch(`${API_URL}/api/albums`)
+                api.get('/api/songs'),
+                api.get('/api/playlists'),
+                api.get('/api/albums')
             ];
 
-            if (userId) {
-                fetchPromises.push(fetch(`${API_URL}/api/user/favorites/${userId}`));
+            // Only fetch favorites if logged in
+            if (localStorage.getItem('accessToken')) {
+                fetchPromises.push(api.get('/api/user/favorites'));
             }
 
             const responses = await Promise.all(fetchPromises);
 
-            // Check if all responses are ok
-            if (responses.some(r => !r.ok)) throw new Error('Some requests failed');
-
-            const [songsData, playlistsData, albumsData, favoritesData] = await Promise.all(
-                responses.map(r => r.json())
-            );
+            const [songsRes, playlistsRes, albumsRes, favoritesRes] = responses;
+            const songsData = songsRes.data;
+            const playlistsData = playlistsRes.data;
+            const albumsData = albumsRes.data;
+            const favoritesData = favoritesRes?.data || [];
 
             // Shuffling only if it's the first load or forced
             const processedSongs = force || !hasData ? shuffleArray(songsData) : songsData;
@@ -143,19 +135,9 @@ export const MusicProvider = ({ children }) => {
     }, [songs, selectedPlaylist, favorites, searchTerm]);
 
     const toggleFavorite = useCallback(async (songId) => {
-        let user = null;
-        try {
-            const userString = localStorage.getItem('user');
-            if (userString && userString !== 'undefined') {
-                user = JSON.parse(userString);
-            }
-        } catch (e) {
-            console.error('Failed to parse user session:', e);
-        }
-
-        if (!user || !user.id) {
-            alert('Your session is incomplete. Please log in again to use Favorites.');
-            localStorage.removeItem('user');
+        const accessToken = localStorage.getItem('accessToken');
+        if (!accessToken) {
+            alert('Please log in to use Favorites.');
             window.location.href = '/login';
             return;
         }
@@ -172,27 +154,16 @@ export const MusicProvider = ({ children }) => {
         });
 
         try {
-            const response = await fetch(`${API_URL}/api/user/favorites/toggle`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ userId: user.id, songId })
-            });
+            const response = await api.post(`/api/user/favorites/toggle`, { songId });
 
-            if (response.ok) {
-                const data = await response.json();
-                const newFavs = data.favorites.map(id => String(id));
-                setFavorites(newFavs);
-            } else {
-                setFavorites(previousFavorites);
-                if (response.status === 404) {
-                    alert('Session expired. Please login again.');
-                    localStorage.removeItem('user');
-                    window.location.href = '/login';
-                }
-            }
+            const newFavs = response.data.favorites.map(id => String(id));
+            setFavorites(newFavs);
         } catch (err) {
             setFavorites(previousFavorites);
             console.error('Error toggling favorite:', err);
+            if (err.response?.status === 401 || err.response?.status === 403) {
+                alert('Session expired. Please login again.');
+            }
         }
     }, [favorites]);
 

@@ -2,10 +2,11 @@ const express = require('express');
 const router = express.Router();
 const multer = require('multer');
 const { upload } = require('../utils/cloudinary');
+const { cacheMiddleware } = require('../utils/cache');
 const Album = require('../models/Album');
 
-// GET /api/albums - Get all albums (no population for faster load)
-router.get('/', async (req, res) => {
+// GET /api/albums - Get all albums (cached for 5 minutes)
+router.get('/', cacheMiddleware(300), async (req, res) => {
     try {
         const albums = await Album.find().sort({ createdAt: -1 }).lean();
         res.json(albums);

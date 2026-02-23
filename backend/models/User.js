@@ -40,11 +40,15 @@ const UserSchema = new mongoose.Schema({
         type: String,
         default: null
     },
+    refreshTokens: [String], // Store active refresh tokens for rotation
     createdAt: {
         type: Date,
         default: Date.now,
         index: true
     }
 });
+
+// Compound index for email and role for faster lookup during auth
+UserSchema.index({ email: 1, role: 1 });
 
 module.exports = mongoose.model('User', UserSchema, 'loginDetails');

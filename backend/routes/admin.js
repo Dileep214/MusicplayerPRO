@@ -4,20 +4,10 @@ const Song = require('../models/Song');
 const Album = require('../models/Album');
 const User = require('../models/User');
 
-// Middleware to check if user is admin (simple check for now)
-// In a real app, you would verify the JWT token and check the user role
-const isAdmin = async (req, res, next) => {
-    // For now, we will just allow everything or you can implement a basic check
-    // if (req.user && req.user.role === 'admin') {
-    //     next();
-    // } else {
-    //     res.status(403).json({ message: 'Access denied. Admins only.' });
-    // }
-    next(); // Placeholder
-};
+const { authenticateToken, authorizeRoles } = require('../utils/auth');
 
-// GET /api/admin/stats - Get dashboard statistics
-router.get('/stats', isAdmin, async (req, res) => {
+// GET /api/admin/stats - Get dashboard statistics (Admin Only)
+router.get('/stats', authenticateToken, authorizeRoles('admin'), async (req, res) => {
     try {
         const totalSongs = await Song.countDocuments();
         const totalAlbums = await Album.countDocuments();

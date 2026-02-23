@@ -41,6 +41,8 @@ const SignUpPage = () => {
 
             const data = await res.json();
             if (res.ok) {
+                localStorage.setItem('accessToken', data.accessToken);
+                localStorage.setItem('refreshToken', data.refreshToken);
                 localStorage.setItem('user', JSON.stringify(data.user));
                 navigate('/home');
             } else {
@@ -65,7 +67,9 @@ const SignUpPage = () => {
             const data = await response.json();
 
             if (response.ok) {
-                // Store user data in localStorage for auto-login
+                // Store tokens and user data in localStorage for auto-login
+                localStorage.setItem('accessToken', data.accessToken);
+                localStorage.setItem('refreshToken', data.refreshToken);
                 localStorage.setItem('user', JSON.stringify(data.user));
                 navigate('/home');
             } else {

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import axios from 'axios';
+import api from '../api';
 import {
     Music,
     Disc,
@@ -35,9 +35,9 @@ const AdminDashboardPage = React.memo(() => {
         setLoading(true);
         try {
             const [statsRes, songsRes, albumsRes] = await Promise.all([
-                axios.get(`${API_URL}/api/admin/stats`),
-                axios.get(`${API_URL}/api/songs`),
-                axios.get(`${API_URL}/api/albums`)
+                api.get(`/api/admin/stats`),
+                api.get(`/api/songs`),
+                api.get(`/api/albums`)
             ]);
             setStats(statsRes.data);
             setSongs(songsRes.data);
@@ -56,7 +56,7 @@ const AdminDashboardPage = React.memo(() => {
     const handleDeleteSong = useCallback(async (id) => {
         if (!window.confirm('Are you sure you want to delete this song?')) return;
         try {
-            await axios.delete(`${API_URL}/api/songs/${id}`);
+            await api.delete(`/api/songs/${id}`);
             setSongs(prev => prev.filter(song => song._id !== id));
             fetchData(); // Refresh stats
         } catch (error) {
@@ -67,7 +67,7 @@ const AdminDashboardPage = React.memo(() => {
     const handleDeleteAlbum = useCallback(async (id) => {
         if (!window.confirm('Are you sure you want to delete this album?')) return;
         try {
-            await axios.delete(`${API_URL}/api/albums/${id}`);
+            await api.delete(`/api/albums/${id}`);
             setAlbums(prev => prev.filter(album => album._id !== id));
             fetchData(); // Refresh stats
         } catch (error) {

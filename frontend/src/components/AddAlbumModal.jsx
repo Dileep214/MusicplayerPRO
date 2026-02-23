@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { X, Upload, Disc, User, Calendar, Music } from 'lucide-react';
-import axios from 'axios';
+import api from '../api';
 import API_URL from '../config';
 
 const AddAlbumModal = ({ isOpen, onClose, onAlbumAdded }) => {
@@ -82,8 +82,7 @@ const AddAlbumModal = ({ isOpen, onClose, onAlbumAdded }) => {
         }
 
         try {
-            const response = await axios.post(`${API_URL}/api/albums`, data, {
-                // Remove manual Content-Type header, axios handles it better with FormData
+            const response = await api.post(`/api/albums`, data, {
                 timeout: 300000 // 5 minutes timeout for large uploads
             });
             onAlbumAdded(response.data);

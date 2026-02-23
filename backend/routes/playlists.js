@@ -1,9 +1,10 @@
 const express = require('express');
 const router = express.Router();
 const Playlist = require('../models/Playlist');
+const { cacheMiddleware } = require('../utils/cache');
 
-// GET /api/playlists - Get all playlists (no population for faster load)
-router.get('/', async (req, res) => {
+// GET /api/playlists - Get all playlists (cached for 5 minutes)
+router.get('/', cacheMiddleware(300), async (req, res) => {
     try {
         const playlists = await Playlist.find().sort({ createdAt: -1 }).lean();
         res.json(playlists);
@@ -13,8 +14,8 @@ router.get('/', async (req, res) => {
     }
 });
 
-// GET /api/playlists/:id - Get a single playlist with songs
-router.get('/:id', async (req, res) => {
+// GET /api/playlists/:id - Get a single playlist with songs (cached for 1 minute)
+router.get('/:id', cacheMiddleware(60), async (req, res) => {
     try {
         const playlist = await Playlist.findById(req.params.id).populate('songs');
         if (!playlist) return res.status(404).json({ message: 'Playlist not found' });
