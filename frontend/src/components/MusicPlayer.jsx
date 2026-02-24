@@ -1,5 +1,5 @@
 import React, { useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
 import { useMusic } from '../context/MusicContext';
 import { Play, Pause, SkipBack, SkipForward, Shuffle, Repeat, Volume2, VolumeX } from 'lucide-react';
 
@@ -26,14 +26,13 @@ const MusicPlayer = React.memo(({ onPlayerClick }) => {
         isBuffering
     } = useMusic();
 
-    const navigate = useNavigate();
-
-
+    const location = useLocation();
+    const hasSidebar = ['/home', '/library', '/profile', '/admin'].includes(location.pathname);
 
     const handleInfoClick = useCallback((e) => {
         e.stopPropagation();
-        navigate('/library');
-    }, [navigate]);
+        if (onPlayerClick) onPlayerClick();
+    }, [onPlayerClick]);
 
     const handleShuffleToggle = useCallback(() => {
         setIsShuffle(!isShuffle);
@@ -64,7 +63,7 @@ const MusicPlayer = React.memo(({ onPlayerClick }) => {
     return (
         <div
             onClick={handlePlayerClick}
-            className="fixed bottom-0 left-0 lg:left-64 right-0 h-20 bg-white/[0.02] backdrop-blur-2xl border-t border-white/10 z-40 cursor-pointer hover:bg-white/[0.05] transition-colors"
+            className={`fixed bottom-0 left-0 ${hasSidebar ? 'lg:left-64' : ''} right-0 h-20 bg-white/[0.02] backdrop-blur-2xl border-t border-white/10 z-40 cursor-pointer hover:bg-white/[0.05] transition-all duration-300`}
         >
             {isBuffering && (
                 <div className="absolute top-0 left-0 right-0 h-0.5 bg-white/10 overflow-hidden z-50">

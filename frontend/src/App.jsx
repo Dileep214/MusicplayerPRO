@@ -1,6 +1,8 @@
 import React, { Suspense, lazy } from 'react'
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
-import { MusicProvider } from './context/MusicContext'
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom'
+import { MusicProvider, useMusic } from './context/MusicContext'
+import MusicPlayer from './components/MusicPlayer'
+import NowPlayingView from './components/NowPlayingView'
 
 // Lazy load pages
 const LandingPage = lazy(() => import('./pages/LandingPage'));
@@ -41,6 +43,25 @@ const PageLoader = () => (
 
 import API_URL from './config';
 
+const PersistentPlayer = () => {
+  const { currentSong, showNowPlayingView, setShowNowPlayingView } = useMusic();
+  const location = useLocation();
+
+  // Don't show player on landing, login, signup unless music is actually playing
+  const isAuthPage = ['/', '/login', '/signup'].includes(location.pathname);
+  if (!currentSong) return null;
+
+  return (
+    <>
+      {showNowPlayingView ? (
+        <NowPlayingView onClose={() => setShowNowPlayingView(false)} />
+      ) : (
+        <MusicPlayer onPlayerClick={() => setShowNowPlayingView(true)} />
+      )}
+    </>
+  );
+};
+
 const App = () => {
   React.useEffect(() => {
     // Wake up the backend (cold start prevention)
@@ -63,6 +84,7 @@ const App = () => {
             <Route path="/admin" element={<AdminRoute><AdminDashboardPage /></AdminRoute>} />
           </Routes>
         </Suspense>
+        <PersistentPlayer />
       </Router>
     </MusicProvider>
   )

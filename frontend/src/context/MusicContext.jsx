@@ -5,7 +5,6 @@ import API_URL from '../config';
 const MusicContext = createContext();
 
 export const MusicProvider = ({ children }) => {
-    // ... state ... (lines 7-23)
     const [songs, setSongs] = useState([]);
     const [playlists, setPlaylists] = useState([]);
     const [currentSongId, setCurrentSongId] = useState(null);
@@ -36,80 +35,13 @@ export const MusicProvider = ({ children }) => {
         return shuffled;
     };
 
-    // Initialize from cache if available
-    useEffect(() => {
-        const cachedSongs = localStorage.getItem('cached_songs');
-        const cachedPlaylists = localStorage.getItem('cached_playlists');
-        const cachedFavorites = localStorage.getItem('cached_favorites');
-
-        if (cachedSongs) setSongs(JSON.parse(cachedSongs));
-        if (cachedPlaylists) setPlaylists(JSON.parse(cachedPlaylists));
-        if (cachedFavorites) setFavorites(JSON.parse(cachedFavorites));
-    }, []);
-
-    // Global fetch for library data
-    const fetchLibraryData = useCallback(async (force = false) => {
-        const hasData = songs.length > 0 && playlists.length > 0;
-        if (!force && hasData) return;
-
-        setIsLoading(!hasData);
-        try {
-            const fetchPromises = [
-                api.get('/api/songs'),
-                api.get('/api/playlists'),
-                api.get('/api/albums')
-            ];
-
-            // Only fetch favorites if logged in
-            if (localStorage.getItem('accessToken')) {
-                fetchPromises.push(api.get('/api/user/favorites'));
-            }
-
-            const responses = await Promise.all(fetchPromises);
-
-            const [songsRes, playlistsRes, albumsRes, favoritesRes] = responses;
-            const songsData = songsRes.data;
-            const playlistsData = playlistsRes.data;
-            const albumsData = albumsRes.data;
-            const favoritesData = favoritesRes?.data || [];
-
-            // Shuffling only if it's the first load or forced
-            const processedSongs = force || !hasData ? shuffleArray(songsData) : songsData;
-            setSongs(processedSongs);
-            localStorage.setItem('cached_songs', JSON.stringify(processedSongs));
-
-            const normalizedAlbums = albumsData.map(album => ({
-                ...album,
-                name: album.title,
-                isAlbum: true
-            }));
-
-            const combinedPlaylists = [...playlistsData, ...normalizedAlbums];
-            setPlaylists(combinedPlaylists);
-            localStorage.setItem('cached_playlists', JSON.stringify(combinedPlaylists));
-
-            if (favoritesData) {
-                const favIds = favoritesData.map(f => String(f._id || f));
-                setFavorites(favIds);
-                localStorage.setItem('cached_favorites', JSON.stringify(favIds));
-            }
-        } catch (error) {
-            console.error('Error fetching library data:', error);
-        } finally {
-            setIsLoading(false);
-        }
-    }, [songs.length, playlists.length]);
-
-    useEffect(() => {
-        fetchLibraryData();
-    }, []);
+    // --- Memoized Values ---
 
     const currentSong = useMemo(() =>
         songs.find(s => String(s._id || s) === String(currentSongId)) || null,
         [songs, currentSongId]
     );
 
-    // Optimized Filter logic with useMemo
     const filteredSongs = useMemo(() => {
         let baseSongs = songs;
         if (selectedPlaylist) {
@@ -134,80 +66,7 @@ export const MusicProvider = ({ children }) => {
         });
     }, [songs, selectedPlaylist, favorites, searchTerm]);
 
-    const toggleFavorite = useCallback(async (songId) => {
-        const accessToken = localStorage.getItem('accessToken');
-        if (!accessToken) {
-            alert('Please log in to use Favorites.');
-            window.location.href = '/login';
-            return;
-        }
-
-        const safeId = String(songId);
-        const previousFavorites = [...favorites];
-
-        setFavorites(prev => {
-            if (prev.includes(safeId)) {
-                return prev.filter(id => id !== safeId);
-            } else {
-                return [...prev, safeId];
-            }
-        });
-
-        try {
-            const response = await api.post(`/api/user/favorites/toggle`, { songId });
-
-            const newFavs = response.data.favorites.map(id => String(id));
-            setFavorites(newFavs);
-        } catch (err) {
-            setFavorites(previousFavorites);
-            console.error('Error toggling favorite:', err);
-            if (err.response?.status === 401 || err.response?.status === 403) {
-                alert('Session expired. Please login again.');
-            }
-        }
-    }, [favorites]);
-
-    useEffect(() => {
-        const audio = audioRef.current;
-        const handleTimeUpdate = () => {
-            setCurrentTime(audio.currentTime);
-            if (isFinite(audio.duration) && audio.duration > 0) {
-                setProgress((audio.currentTime / audio.duration) * 100);
-            } else {
-                setProgress(0);
-            }
-        };
-        const handleLoadedMetadata = () => setDuration(audio.duration);
-        const handleWaiting = () => setIsBuffering(true);
-        const handlePlaying = () => setIsBuffering(false);
-        const handleCanPlay = () => setIsBuffering(false);
-        const handleLoadStart = () => setIsBuffering(true);
-        const handleError = () => setIsBuffering(false);
-
-        const handleEnded = () => {
-            handleNext(repeatMode === 'none' && !isShuffle);
-        };
-
-        audio.addEventListener('timeupdate', handleTimeUpdate);
-        audio.addEventListener('loadedmetadata', handleLoadedMetadata);
-        audio.addEventListener('ended', handleEnded);
-        audio.addEventListener('waiting', handleWaiting);
-        audio.addEventListener('playing', handlePlaying);
-        audio.addEventListener('canplay', handleCanPlay);
-        audio.addEventListener('loadstart', handleLoadStart);
-        audio.addEventListener('error', handleError);
-
-        return () => {
-            audio.removeEventListener('timeupdate', handleTimeUpdate);
-            audio.removeEventListener('loadedmetadata', handleLoadedMetadata);
-            audio.removeEventListener('ended', handleEnded);
-            audio.removeEventListener('waiting', handleWaiting);
-            audio.removeEventListener('playing', handlePlaying);
-            audio.removeEventListener('canplay', handleCanPlay);
-            audio.removeEventListener('loadstart', handleLoadStart);
-            audio.removeEventListener('error', handleError);
-        };
-    }, [currentSongId, songs, repeatMode, isShuffle, selectedPlaylist]);
+    // --- Callbacks & Helpers ---
 
     const formatUrl = useCallback((url, size = 'thumbnail') => {
         if (!url || typeof url !== 'string') return '';
@@ -261,44 +120,6 @@ export const MusicProvider = ({ children }) => {
         const seconds = Math.floor(time % 60);
         return `${minutes}:${seconds.toString().padStart(2, '0')}`;
     }, []);
-
-    useEffect(() => {
-        if (currentSong && currentSong.audioUrl) {
-            const absoluteAudioUrl = formatUrl(currentSong.audioUrl);
-            if (audioRef.current.src !== absoluteAudioUrl) {
-                audioRef.current.src = absoluteAudioUrl;
-                audioRef.current.load();
-                if (isPlaying) {
-                    const playPromise = audioRef.current.play();
-                    if (playPromise !== undefined) {
-                        playPromise.catch(error => {
-                            if (error.name !== 'AbortError') console.error('Playback error:', error);
-                        });
-                    }
-                }
-            }
-        }
-    }, [currentSong, isPlaying, formatUrl]);
-
-    useEffect(() => {
-        audioRef.current.volume = volume;
-    }, [volume]);
-
-    useEffect(() => {
-        if (isPlaying) {
-            const playPromise = audioRef.current.play();
-            if (playPromise !== undefined) {
-                playPromise.catch(error => {
-                    if (error.name !== 'AbortError') {
-                        console.error('Playback error:', error);
-                        setIsPlaying(false);
-                    }
-                });
-            }
-        } else {
-            audioRef.current.pause();
-        }
-    }, [isPlaying]);
 
     const togglePlay = useCallback(() => setIsPlaying(prev => !prev), []);
 
@@ -365,6 +186,221 @@ export const MusicProvider = ({ children }) => {
         setCurrentTime(0);
         setDuration(0);
         setProgress(0);
+    }, []);
+
+    const fetchLibraryData = useCallback(async (force = false) => {
+        const hasData = songs.length > 0 && playlists.length > 0;
+        if (!force && hasData) return;
+
+        setIsLoading(!hasData);
+        try {
+            const fetchPromises = [
+                api.get('/api/songs'),
+                api.get('/api/playlists'),
+                api.get('/api/albums')
+            ];
+
+            // Only fetch favorites if logged in
+            if (localStorage.getItem('accessToken')) {
+                fetchPromises.push(api.get('/api/user/favorites'));
+            }
+
+            const responses = await Promise.all(fetchPromises);
+
+            const [songsRes, playlistsRes, albumsRes, favoritesRes] = responses;
+            const songsData = songsRes.data;
+            const playlistsData = playlistsRes.data;
+            const albumsData = albumsRes.data;
+            const favoritesData = favoritesRes?.data || [];
+
+            // Shuffling only if it's the first load or forced
+            const processedSongs = force || !hasData ? shuffleArray(songsData) : songsData;
+            setSongs(processedSongs);
+            localStorage.setItem('cached_songs', JSON.stringify(processedSongs));
+
+            const normalizedAlbums = albumsData.map(album => ({
+                ...album,
+                name: album.title,
+                isAlbum: true
+            }));
+
+            const combinedPlaylists = [...playlistsData, ...normalizedAlbums];
+            setPlaylists(combinedPlaylists);
+            localStorage.setItem('cached_playlists', JSON.stringify(combinedPlaylists));
+
+            if (favoritesData) {
+                const favIds = favoritesData.map(f => String(f._id || f));
+                setFavorites(favIds);
+                localStorage.setItem('cached_favorites', JSON.stringify(favIds));
+            }
+        } catch (error) {
+            console.error('Error fetching library data:', error);
+        } finally {
+            setIsLoading(false);
+        }
+    }, [songs.length, playlists.length]);
+
+    const toggleFavorite = useCallback(async (songId) => {
+        const accessToken = localStorage.getItem('accessToken');
+        if (!accessToken) {
+            alert('Please log in to use Favorites.');
+            window.location.href = '/login';
+            return;
+        }
+
+        const safeId = String(songId);
+        const previousFavorites = [...favorites];
+
+        setFavorites(prev => {
+            if (prev.includes(safeId)) {
+                return prev.filter(id => id !== safeId);
+            } else {
+                return [...prev, safeId];
+            }
+        });
+
+        try {
+            const response = await api.post(`/api/user/favorites/toggle`, { songId });
+
+            const newFavs = response.data.favorites.map(id => String(id));
+            setFavorites(newFavs);
+        } catch (err) {
+            setFavorites(previousFavorites);
+            console.error('Error toggling favorite:', err);
+            if (err.response?.status === 401 || err.response?.status === 403) {
+                alert('Session expired. Please login again.');
+            }
+        }
+    }, [favorites]);
+
+    // --- Side Effects ---
+
+    // Initialize from cache if available
+    useEffect(() => {
+        const cachedSongs = localStorage.getItem('cached_songs');
+        const cachedPlaylists = localStorage.getItem('cached_playlists');
+        const cachedFavorites = localStorage.getItem('cached_favorites');
+
+        if (cachedSongs) setSongs(JSON.parse(cachedSongs));
+        if (cachedPlaylists) setPlaylists(JSON.parse(cachedPlaylists));
+        if (cachedFavorites) setFavorites(JSON.parse(cachedFavorites));
+
+        fetchLibraryData();
+    }, [fetchLibraryData]);
+
+    // Main Audio Event Listeners
+    useEffect(() => {
+        const audio = audioRef.current;
+        const handleTimeUpdate = () => {
+            setCurrentTime(audio.currentTime);
+            if (isFinite(audio.duration) && audio.duration > 0) {
+                setProgress((audio.currentTime / audio.duration) * 100);
+            } else {
+                setProgress(0);
+            }
+        };
+        const handleLoadedMetadata = () => setDuration(audio.duration);
+        const handleWaiting = () => setIsBuffering(true);
+        const handlePlaying = () => setIsBuffering(false);
+        const handleCanPlay = () => setIsBuffering(false);
+        const handleLoadStart = () => setIsBuffering(true);
+        const handleError = () => setIsBuffering(false);
+
+        const handleEnded = () => {
+            handleNext(repeatMode === 'none' && !isShuffle);
+        };
+
+        audio.addEventListener('timeupdate', handleTimeUpdate);
+        audio.addEventListener('loadedmetadata', handleLoadedMetadata);
+        audio.addEventListener('ended', handleEnded);
+        audio.addEventListener('waiting', handleWaiting);
+        audio.addEventListener('playing', handlePlaying);
+        audio.addEventListener('canplay', handleCanPlay);
+        audio.addEventListener('loadstart', handleLoadStart);
+        audio.addEventListener('error', handleError);
+
+        return () => {
+            audio.removeEventListener('timeupdate', handleTimeUpdate);
+            audio.removeEventListener('loadedmetadata', handleLoadedMetadata);
+            audio.removeEventListener('ended', handleEnded);
+            audio.removeEventListener('waiting', handleWaiting);
+            audio.removeEventListener('playing', handlePlaying);
+            audio.removeEventListener('canplay', handleCanPlay);
+            audio.removeEventListener('loadstart', handleLoadStart);
+            audio.removeEventListener('error', handleError);
+        };
+    }, [currentSongId, songs, repeatMode, isShuffle, selectedPlaylist, handleNext]);
+
+    // Media Session & Source Management
+    useEffect(() => {
+        if (currentSong && currentSong.audioUrl) {
+            const absoluteAudioUrl = formatUrl(currentSong.audioUrl);
+            if (audioRef.current.src !== absoluteAudioUrl) {
+                audioRef.current.src = absoluteAudioUrl;
+                audioRef.current.load();
+                if (isPlaying) {
+                    const playPromise = audioRef.current.play();
+                    if (playPromise !== undefined) {
+                        playPromise.catch(error => {
+                            if (error.name !== 'AbortError') console.error('Playback error:', error);
+                        });
+                    }
+                }
+            }
+
+            // Media Session API for background/OS integration
+            if ('mediaSession' in navigator) {
+                navigator.mediaSession.metadata = new MediaMetadata({
+                    title: cleanName(currentSong.title),
+                    artist: currentSong.artist || 'Unknown Artist',
+                    album: currentSong.albumTitle || 'App Record',
+                    artwork: [
+                        { src: formatUrl(currentSong.coverImg), sizes: '512x512', type: 'image/jpeg' }
+                    ]
+                });
+
+                navigator.mediaSession.setActionHandler('play', togglePlay);
+                navigator.mediaSession.setActionHandler('pause', togglePlay);
+                navigator.mediaSession.setActionHandler('previoustrack', handlePrevious);
+                navigator.mediaSession.setActionHandler('nexttrack', () => handleNext());
+                navigator.mediaSession.setActionHandler('seekbackward', skipBackward);
+                navigator.mediaSession.setActionHandler('seekforward', skipForward);
+            }
+        }
+    }, [currentSong, isPlaying, formatUrl, cleanName, togglePlay, handleNext, handlePrevious, skipBackward, skipForward]);
+
+    // Volume Management
+    useEffect(() => {
+        audioRef.current.volume = volume;
+    }, [volume]);
+
+    // Playback State Management
+    useEffect(() => {
+        if (isPlaying) {
+            const playPromise = audioRef.current.play();
+            if (playPromise !== undefined) {
+                playPromise.catch(error => {
+                    if (error.name !== 'AbortError') {
+                        console.error('Playback error:', error);
+                        setIsPlaying(false);
+                    }
+                });
+            }
+            if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'playing';
+        } else {
+            audioRef.current.pause();
+            if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'paused';
+        }
+    }, [isPlaying]);
+
+    // Proper Cleanup for the Audio Instance
+    useEffect(() => {
+        const audio = audioRef.current;
+        return () => {
+            audio.pause();
+            audio.src = '';
+            audio.load();
+        };
     }, []);
 
     const contextValue = useMemo(() => ({
