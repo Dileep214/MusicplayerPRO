@@ -8,9 +8,11 @@ import { GoogleLogin } from '@react-oauth/google';
 import { jwtDecode } from 'jwt-decode';
 import { useNavigate } from 'react-router-dom';
 import API_URL from '../config';
+import { useMusic } from '../context/MusicContext';
 
 const SignUpPage = () => {
     const navigate = useNavigate();
+    const { login } = useMusic();
     const [formData, setFormData] = useState({
         name: '',
         email: '',
@@ -41,9 +43,8 @@ const SignUpPage = () => {
 
             const data = await res.json();
             if (res.ok) {
-                localStorage.setItem('accessToken', data.accessToken);
-                localStorage.setItem('refreshToken', data.refreshToken);
-                localStorage.setItem('user', JSON.stringify(data.user));
+                // Update context state AND localStorage via login()
+                login(data.user, { accessToken: data.accessToken, refreshToken: data.refreshToken });
                 navigate('/home');
             } else {
                 alert(data.message || 'Google signup failed');
@@ -67,10 +68,8 @@ const SignUpPage = () => {
             const data = await response.json();
 
             if (response.ok) {
-                // Store tokens and user data in localStorage for auto-login
-                localStorage.setItem('accessToken', data.accessToken);
-                localStorage.setItem('refreshToken', data.refreshToken);
-                localStorage.setItem('user', JSON.stringify(data.user));
+                // Update context state AND localStorage via login()
+                login(data.user, { accessToken: data.accessToken, refreshToken: data.refreshToken });
                 navigate('/home');
             } else {
                 alert(data.message || 'Something went wrong');

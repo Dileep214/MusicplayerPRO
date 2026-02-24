@@ -433,6 +433,20 @@ export const MusicProvider = ({ children }) => {
         };
     }, []);
 
+    const login = useCallback((userData, tokens = {}) => {
+        setUser(userData);
+        localStorage.setItem('user', JSON.stringify(userData));
+        if (tokens.accessToken) localStorage.setItem('accessToken', tokens.accessToken);
+        if (tokens.refreshToken) localStorage.setItem('refreshToken', tokens.refreshToken);
+    }, []);
+
+    const logout = useCallback(() => {
+        stopPlayback();
+        setUser(null);
+        localStorage.clear();
+        window.location.href = '/login';
+    }, [stopPlayback]);
+
     const contextValue = useMemo(() => ({
         songs, setSongs,
         playlists, setPlaylists,
@@ -457,7 +471,7 @@ export const MusicProvider = ({ children }) => {
         formatTime,
         fetchLibraryData,
         togglePlay, handleNext, handlePrevious, handleSeek, skipForward, skipBackward, stopPlayback,
-        user, updateUser
+        user, updateUser, login, logout
     }), [
         songs, playlists, currentSongId, currentSong, isPlaying,
         currentTime, duration, progress, volume, isShuffle,
@@ -466,8 +480,9 @@ export const MusicProvider = ({ children }) => {
         isBuffering, isLoading,
         formatUrl, fetchLibraryData, togglePlay, handleNext, handlePrevious, handleSeek,
         skipForward, skipBackward, stopPlayback,
-        user, updateUser
+        user, updateUser, login, logout
     ]);
+
 
     return (
         <MusicContext.Provider value={contextValue}>
