@@ -210,9 +210,12 @@ const MusicLibraryPage = () => {
                                         setSelectedPlaylist(null);
                                         setActiveView('playlists');
                                     }}
-                                    className="text-white/60 hover:text-white text-sm mb-2 transition-colors"
+                                    className="inline-flex items-center gap-2 px-4 py-2 mb-3 rounded-full bg-green-500/20 hover:bg-green-500/30 border border-green-500/40 hover:border-green-400 text-green-400 hover:text-green-300 text-sm font-semibold transition-all duration-200 shadow-md hover:shadow-green-500/25 active:scale-95"
                                 >
-                                    ← Back to Library
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+                                    </svg>
+                                    Back to Library
                                 </button>
                                 <h2 className="text-3xl font-black text-white">
                                     {activeView === 'favorites' ? 'Favorite Songs' :
