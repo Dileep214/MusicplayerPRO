@@ -8,10 +8,12 @@ import {
     Plus,
     Trash2,
     LayoutDashboard,
-    ChevronRight
+    ChevronRight,
+    Pencil
 } from 'lucide-react';
 import AddSongModal from '../components/AddSongModal';
 import AddAlbumModal from '../components/AddAlbumModal';
+import AlbumEditModal from '../components/AlbumEditModal';
 import MainLayout from '../components/layout/MainLayout';
 import API_URL from '../config';
 import { useMusic } from '../context/MusicContext';
@@ -29,6 +31,7 @@ const AdminDashboardPage = React.memo(() => {
     const [activeTab, setActiveTab] = useState('songs');
     const [isSongModalOpen, setIsSongModalOpen] = useState(false);
     const [isAlbumModalOpen, setIsAlbumModalOpen] = useState(false);
+    const [editingAlbum, setEditingAlbum] = useState(null);
     const [loading, setLoading] = useState(true);
 
     const fetchData = useCallback(async () => {
@@ -250,12 +253,22 @@ const AdminDashboardPage = React.memo(() => {
                                                 {new Date(album.releaseDate).toLocaleDateString()}
                                             </td>
                                             <td className="px-4 lg:px-6 py-4 text-right">
-                                                <button
-                                                    onClick={() => handleDeleteAlbum(album._id)}
-                                                    className="p-2 text-white/40 hover:text-red-400 hover:bg-red-400/10 rounded-lg transition-all"
-                                                >
-                                                    <Trash2 className="w-5 h-5" />
-                                                </button>
+                                                <div className="flex items-center justify-end gap-1">
+                                                    <button
+                                                        onClick={() => setEditingAlbum(album)}
+                                                        className="p-2 text-white/40 hover:text-green-400 hover:bg-green-400/10 rounded-lg transition-all"
+                                                        title="Edit Album"
+                                                    >
+                                                        <Pencil className="w-4 h-4" />
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleDeleteAlbum(album._id)}
+                                                        className="p-2 text-white/40 hover:text-red-400 hover:bg-red-400/10 rounded-lg transition-all"
+                                                        title="Delete Album"
+                                                    >
+                                                        <Trash2 className="w-5 h-5" />
+                                                    </button>
+                                                </div>
                                             </td>
                                         </tr>
                                     ))}
@@ -275,6 +288,12 @@ const AdminDashboardPage = React.memo(() => {
                 isOpen={isAlbumModalOpen}
                 onClose={handleCloseAlbumModal}
                 onAlbumAdded={fetchData}
+            />
+            <AlbumEditModal
+                album={editingAlbum}
+                isOpen={!!editingAlbum}
+                onClose={() => setEditingAlbum(null)}
+                onUpdated={fetchData}
             />
         </MainLayout>
     );
