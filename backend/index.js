@@ -19,22 +19,40 @@ const rateLimit = require('express-rate-limit');
 const path = require('path');
 const compression = require('compression');
 
-// Middleware
-app.use(helmet()); // Security headers
-app.use(morgan('dev')); // Request logging
-app.use(compression());
-app.use(cors());
-app.use(express.json());
+// Middleware & Performance
+app.use(express.json()); // 1. JSON Parsing
+app.use(cors()); // 2. CORS
+app.use(compression()); // 3. Compression
+app.use(helmet()); // Security
+app.use(morgan('dev')); // Logger
+
+
+// Custom Response Time Logger
+app.use((req, res, next) => {
+    const start = Date.now();
+    res.on('finish', () => {
+        const duration = Date.now() - start;
+        if (req.originalUrl !== '/health') {
+            console.log(`[RES] ${req.method} ${req.originalUrl} - ${res.statusCode} (${duration}ms)`);
+        }
+    });
+    next();
+});
+
+// Health Check Endpoint (Lightweight for UptimeRobot)
+app.get('/health', (req, res) => {
+    res.status(200).send('OK');
+});
 
 // Rate Limiting
 const limiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 100, // Limit each IP to 100 requests per windowMs
-    message: 'Too many requests from this IP, please try again after 15 minutes'
+    windowMs: 15 * 60 * 1000,
+    max: 100,
+    message: 'Too many requests'
 });
 app.use('/api/', limiter);
 
-// Serve static files from the 'uploads' directory
+// Serve static files
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Routes
@@ -45,15 +63,16 @@ app.use('/api/albums', albumRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/user', userRoutes);
 
-// MongoDB Connection
+app.get('/', (req, res) => {
+    res.send('MusicPlayerPRO Backend is running!');
+});
+
+// MongoDB Connection (Initialized once)
 const uri = process.env.MONGO_URI;
 mongoose.connect(uri, { dbName: 'MusicPlayerPRO' })
     .then(() => console.log('✅ MongoDB connection established successfully'))
     .catch(err => console.error('❌ MongoDB connection error:', err));
 
-app.get('/', (req, res) => {
-    res.send('MusicPlayerPRO Backend is running!');
-});
 
 // Global Error Handler
 app.use((err, req, res, next) => {
