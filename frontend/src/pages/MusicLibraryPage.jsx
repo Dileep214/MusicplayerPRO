@@ -210,9 +210,9 @@ const MusicLibraryPage = () => {
                                         setSelectedPlaylist(null);
                                         setActiveView('playlists');
                                     }}
-                                    className="inline-flex items-center gap-2 px-4 py-2 mb-3 rounded-full bg-green-500/20 hover:bg-green-500/30 border border-green-500/40 hover:border-green-400 text-green-400 hover:text-green-300 text-sm font-semibold transition-all duration-200 shadow-md hover:shadow-green-500/25 active:scale-95"
+                                    className="inline-flex items-center gap-4 px-4 py-3 mb-3 rounded-xl bg-white/10 text-white text-sm font-semibold shadow-lg hover:bg-white/15 transition-all duration-200 active:scale-95"
                                 >
-                                    <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                                         <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
                                     </svg>
                                     Back to Library
