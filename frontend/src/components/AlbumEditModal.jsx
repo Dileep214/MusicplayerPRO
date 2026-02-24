@@ -5,8 +5,10 @@ import { useMusic } from '../context/MusicContext';
 
 const AlbumEditModal = ({ album, isOpen, onClose, onUpdated }) => {
     const { formatUrl, cleanName } = useMusic();
+    // Pre-fill with prop data immediately so modal isn't blank
     const [albumData, setAlbumData] = useState(null);
     const [loading, setLoading] = useState(false);
+    const [fetchError, setFetchError] = useState('');
     const [saving, setSaving] = useState(false);
     const [toast, setToast] = useState('');
 
@@ -22,19 +24,32 @@ const AlbumEditModal = ({ album, isOpen, onClose, onUpdated }) => {
     const fetchAlbum = useCallback(async () => {
         if (!album?._id) return;
         setLoading(true);
+        setFetchError('');
         try {
             const res = await api.get(`/api/albums/${album._id}`);
             setAlbumData(res.data);
         } catch (err) {
             console.error('Error fetching album:', err);
+            const errMsg = err.response?.data?.message || err.message || 'Unknown error';
+            setFetchError(errMsg);
+            // Fall back to prop data so at least cover / basic info shows
+            setAlbumData({ ...album, songs: [] });
         } finally {
             setLoading(false);
         }
-    }, [album?._id]);
+    }, [album]);
 
     useEffect(() => {
-        if (isOpen) fetchAlbum();
-    }, [isOpen, fetchAlbum]);
+        if (isOpen && album) {
+            // Show prop data immediately
+            setAlbumData({ ...album, songs: album.songs || [] });
+            fetchAlbum();
+        }
+        if (!isOpen) {
+            setAlbumData(null);
+            setFetchError('');
+        }
+    }, [isOpen, album?._id]);
 
     if (!isOpen) return null;
 
@@ -133,11 +148,28 @@ const AlbumEditModal = ({ album, isOpen, onClose, onUpdated }) => {
 
                 {/* Content */}
                 <div className="flex-1 overflow-y-auto p-6 space-y-6">
-                    {loading ? (
-                        <div className="flex items-center justify-center py-16">
-                            <Loader2 className="w-8 h-8 text-green-400 animate-spin" />
+                    {/* Loading spinner (songs) */}
+                    {loading && (
+                        <div className="flex items-center gap-3 px-4 py-3 bg-white/5 rounded-xl border border-white/10 mb-2">
+                            <Loader2 className="w-4 h-4 text-green-400 animate-spin flex-shrink-0" />
+                            <span className="text-white/50 text-sm">Loading songs…</span>
                         </div>
-                    ) : albumData ? (
+                    )}
+
+                    {/* Fetch error banner */}
+                    {fetchError && (
+                        <div className="flex items-center justify-between gap-3 px-4 py-3 bg-yellow-500/10 border border-yellow-500/30 rounded-xl mb-2">
+                            <p className="text-yellow-400 text-sm">⚠️ Could not load songs: <span className="text-yellow-300 font-mono">{fetchError}</span></p>
+                            <button
+                                onClick={fetchAlbum}
+                                className="px-3 py-1 bg-yellow-500/20 hover:bg-yellow-500/30 text-yellow-300 text-xs font-semibold rounded-lg transition-all flex-shrink-0"
+                            >
+                                Retry
+                            </button>
+                        </div>
+                    )}
+
+                    {albumData ? (
                         <>
                             {/* ─── Cover Photo ─── */}
                             <div className="flex items-center gap-6 p-5 bg-white/5 rounded-2xl border border-white/10">
@@ -256,9 +288,7 @@ const AlbumEditModal = ({ album, isOpen, onClose, onUpdated }) => {
                                 )}
                             </div>
                         </>
-                    ) : (
-                        <p className="text-white/40 text-center py-10">Failed to load album data.</p>
-                    )}
+                    ) : null}
                 </div>
 
                 {/* Footer */}
