@@ -40,8 +40,9 @@ app.use((req, res, next) => {
 });
 
 // Health Check Endpoint (Lightweight for UptimeRobot)
-app.get('/health', (req, res) => {
-    res.status(200).send('OK');
+app.get("/health", (req, res) => {
+    console.log("Health ping at:", new Date().toISOString());
+    res.status(200).json({ status: "alive" });
 });
 
 // Rate Limiting

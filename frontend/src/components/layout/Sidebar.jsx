@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Home, BookOpen, User, LayoutDashboard, Music, X, Menu } from 'lucide-react';
+import { useMusic } from '../../context/MusicContext';
 
 const NAV_LINKS_BASE = [
     { path: '/home', label: 'Home', icon: Home },
@@ -10,19 +11,11 @@ const NAV_LINKS_BASE = [
 
 const Sidebar = ({ isOpen, onClose }) => {
     const location = useLocation();
-
-    const userObj = React.useMemo(() => {
-        try {
-            const user = localStorage.getItem('user');
-            return JSON.parse(user || 'null');
-        } catch {
-            return null;
-        }
-    }, []);
+    const { user, formatUrl } = useMusic();
 
     const isAdmin = React.useMemo(() =>
-        userObj && userObj.role === 'admin' && userObj.email?.toLowerCase() === 'dileepkomarthi@gmail.com',
-        [userObj]
+        user && user.role === 'admin' && user.email?.toLowerCase() === 'dileepkomarthi@gmail.com',
+        [user]
     );
 
     const navLinks = React.useMemo(() => {
@@ -97,20 +90,28 @@ const Sidebar = ({ isOpen, onClose }) => {
                 </nav>
 
                 {/* User Info */}
-                {userObj && (
+                {user && (
                     <div className="p-4 border-t border-white/10">
                         <div className="flex items-center gap-3 px-3 py-2 rounded-xl bg-white/5">
-                            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-green-400 to-purple-500 flex items-center justify-center">
-                                <span className="text-white font-bold text-sm">
-                                    {userObj.name?.[0]?.toUpperCase() || 'U'}
-                                </span>
+                            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-green-400 to-purple-500 flex items-center justify-center overflow-hidden border border-white/10">
+                                {user.profilePhoto ? (
+                                    <img
+                                        src={formatUrl(user.profilePhoto)}
+                                        alt="Profile"
+                                        className="w-full h-full object-cover"
+                                    />
+                                ) : (
+                                    <span className="text-white font-bold text-sm">
+                                        {user.name?.[0]?.toUpperCase() || 'U'}
+                                    </span>
+                                )}
                             </div>
                             <div className="flex-1 min-w-0">
                                 <p className="text-white text-sm font-semibold truncate">
-                                    {userObj.name || 'User'}
+                                    {user.name || 'User'}
                                 </p>
                                 <p className="text-white/40 text-xs truncate">
-                                    {userObj.email}
+                                    {user.email}
                                 </p>
                             </div>
                         </div>

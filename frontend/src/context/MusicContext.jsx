@@ -22,6 +22,22 @@ export const MusicProvider = ({ children }) => {
     const [favorites, setFavorites] = useState([]);
     const [isBuffering, setIsBuffering] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
+    const [user, setUser] = useState(() => {
+        try {
+            const saved = localStorage.getItem('user');
+            return (saved && saved !== 'undefined') ? JSON.parse(saved) : null;
+        } catch {
+            return null;
+        }
+    });
+
+    const updateUser = useCallback((newData) => {
+        setUser(prev => {
+            const next = { ...prev, ...newData };
+            localStorage.setItem('user', JSON.stringify(next));
+            return next;
+        });
+    }, []);
 
     const audioRef = useRef(new Audio());
 
@@ -292,14 +308,24 @@ export const MusicProvider = ({ children }) => {
     useEffect(() => {
         const audio = audioRef.current;
         const handleTimeUpdate = () => {
-            setCurrentTime(audio.currentTime);
-            if (isFinite(audio.duration) && audio.duration > 0) {
-                setProgress((audio.currentTime / audio.duration) * 100);
-            } else {
-                setProgress(0);
+            if (!audio.paused) {
+                setCurrentTime(audio.currentTime);
+                if (isFinite(audio.duration) && audio.duration > 0) {
+                    setProgress((audio.currentTime / audio.duration) * 100);
+                }
             }
         };
-        const handleLoadedMetadata = () => setDuration(audio.duration);
+
+        const handleProgress = () => {
+            // Handle buffering progress if needed
+        };
+
+        const handleLoadedMetadata = () => {
+            setDuration(audio.duration);
+            if (isFinite(audio.duration) && audio.duration > 0) {
+                setProgress((audio.currentTime / audio.duration) * 100);
+            }
+        };
         const handleWaiting = () => setIsBuffering(true);
         const handlePlaying = () => setIsBuffering(false);
         const handleCanPlay = () => setIsBuffering(false);
@@ -312,22 +338,26 @@ export const MusicProvider = ({ children }) => {
 
         audio.addEventListener('timeupdate', handleTimeUpdate);
         audio.addEventListener('loadedmetadata', handleLoadedMetadata);
+        audio.addEventListener('durationchange', handleLoadedMetadata);
         audio.addEventListener('ended', handleEnded);
         audio.addEventListener('waiting', handleWaiting);
         audio.addEventListener('playing', handlePlaying);
         audio.addEventListener('canplay', handleCanPlay);
         audio.addEventListener('loadstart', handleLoadStart);
         audio.addEventListener('error', handleError);
+        audio.addEventListener('progress', handleProgress);
 
         return () => {
             audio.removeEventListener('timeupdate', handleTimeUpdate);
             audio.removeEventListener('loadedmetadata', handleLoadedMetadata);
+            audio.removeEventListener('durationchange', handleLoadedMetadata);
             audio.removeEventListener('ended', handleEnded);
             audio.removeEventListener('waiting', handleWaiting);
             audio.removeEventListener('playing', handlePlaying);
             audio.removeEventListener('canplay', handleCanPlay);
             audio.removeEventListener('loadstart', handleLoadStart);
             audio.removeEventListener('error', handleError);
+            audio.removeEventListener('progress', handleProgress);
         };
     }, [currentSongId, songs, repeatMode, isShuffle, selectedPlaylist, handleNext]);
 
@@ -426,7 +456,8 @@ export const MusicProvider = ({ children }) => {
         cleanName,
         formatTime,
         fetchLibraryData,
-        togglePlay, handleNext, handlePrevious, handleSeek, skipForward, skipBackward, stopPlayback
+        togglePlay, handleNext, handlePrevious, handleSeek, skipForward, skipBackward, stopPlayback,
+        user, updateUser
     }), [
         songs, playlists, currentSongId, currentSong, isPlaying,
         currentTime, duration, progress, volume, isShuffle,
@@ -434,7 +465,8 @@ export const MusicProvider = ({ children }) => {
         showNowPlayingView, filteredSongs, favorites, toggleFavorite,
         isBuffering, isLoading,
         formatUrl, fetchLibraryData, togglePlay, handleNext, handlePrevious, handleSeek,
-        skipForward, skipBackward, stopPlayback
+        skipForward, skipBackward, stopPlayback,
+        user, updateUser
     ]);
 
     return (

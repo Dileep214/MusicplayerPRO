@@ -7,34 +7,38 @@ import { useMusic } from '../context/MusicContext';
 import { Camera, User as UserIcon } from 'lucide-react';
 
 const ProfilePage = React.memo(() => {
-    const { formatUrl, stopPlayback } = useMusic();
+    const { formatUrl, stopPlayback, user, updateUser } = useMusic();
     const navigate = useNavigate();
 
-    const userData = useMemo(() => {
-        try {
-            const user = localStorage.getItem('user');
-            if (!user || user === 'undefined') return {};
-            return JSON.parse(user);
-        } catch {
-            return {};
-        }
-    }, []);
-
-    const [profilePhoto, setProfilePhoto] = useState(userData.profilePhoto || null);
     const [uploading, setUploading] = useState(false);
+    const [preferences, setPreferences] = useState(() => {
+        const saved = localStorage.getItem('user_preferences');
+        return saved ? JSON.parse(saved) : {
+            notif: true,
+            auto: true,
+            hq: false
+        };
+    });
+
     const fileInputRef = useRef(null);
 
     const handleLogout = useCallback(() => {
         stopPlayback();
-        localStorage.removeItem('user');
-        localStorage.removeItem('accessToken');
-        localStorage.removeItem('refreshToken');
-        navigate('/');
+        localStorage.clear(); // Clear all to be safe
+        navigate('/login');
     }, [navigate, stopPlayback]);
 
     const handlePhotoClick = useCallback(() => {
         fileInputRef.current?.click();
     }, []);
+
+    const handlePreferenceToggle = (id) => {
+        setPreferences(prev => {
+            const next = { ...prev, [id]: !prev[id] };
+            localStorage.setItem('user_preferences', JSON.stringify(next));
+            return next;
+        });
+    };
 
     const handlePhotoChange = useCallback(async (e) => {
         const file = e.target.files?.[0];
@@ -50,44 +54,48 @@ const ProfilePage = React.memo(() => {
             return;
         }
 
-        if (!userData.id && !userData._id) {
-            alert('User ID not found. Please log in again.');
-            return;
-        }
-
         setUploading(true);
 
         try {
             const formData = new FormData();
             formData.append('profilePhoto', file);
-            formData.append('userId', userData.id || userData._id);
 
             const response = await api.post(`/api/user/profile-photo`, formData, {
-                headers: {
-                    'Content-Type': 'multipart/form-data'
-                }
+                headers: { 'Content-Type': 'multipart/form-data' }
             });
 
             const newPhotoUrl = response.data.profilePhoto;
-            setProfilePhoto(newPhotoUrl);
 
-            const updatedUser = { ...userData, profilePhoto: newPhotoUrl };
-            localStorage.setItem('user', JSON.stringify(updatedUser));
+            // Update global state
+            updateUser({ profilePhoto: newPhotoUrl });
 
             alert('Profile photo updated successfully!');
         } catch (error) {
             console.error('Error uploading photo:', error);
-            const errorMsg = error.response?.data?.message || error.message || 'Unknown error occurred';
-            alert(`Failed to upload photo: ${errorMsg}`);
+            alert(`Failed to upload photo: ${error.response?.data?.message || error.message}`);
         } finally {
             setUploading(false);
         }
-    }, [userData]);
+    }, [updateUser]);
 
     const userInitial = useMemo(() =>
-        (userData.name || 'U').charAt(0).toUpperCase(),
-        [userData.name]
+        (user?.name || 'U').charAt(0).toUpperCase(),
+        [user?.name]
     );
+
+    const handleSave = () => {
+        alert('Preferences saved successfully!');
+    };
+
+    if (!user) {
+        return (
+            <MainLayout>
+                <div className="flex items-center justify-center min-h-[60vh] text-white">
+                    <p>Please log in to view your profile.</p>
+                </div>
+            </MainLayout>
+        );
+    }
 
     return (
         <MainLayout>
@@ -105,9 +113,9 @@ const ProfilePage = React.memo(() => {
                         <div className="relative group">
                             <div className="w-32 h-32 rounded-full bg-gradient-to-br from-green-500 to-purple-600 p-1">
                                 <div className="w-full h-full rounded-full bg-black overflow-hidden flex items-center justify-center">
-                                    {profilePhoto ? (
+                                    {user.profilePhoto ? (
                                         <img
-                                            src={formatUrl(profilePhoto)}
+                                            src={formatUrl(user.profilePhoto)}
                                             alt="Profile"
                                             className="w-full h-full object-cover"
                                             loading="lazy"
@@ -154,7 +162,7 @@ const ProfilePage = React.memo(() => {
                             <input
                                 readOnly
                                 type="text"
-                                value={userData.name || 'Guest'}
+                                value={user.name || 'Guest'}
                                 className="w-full px-4 py-3 rounded-lg bg-white/5 border border-white/10 text-white cursor-not-allowed"
                             />
                         </div>
@@ -166,7 +174,7 @@ const ProfilePage = React.memo(() => {
                             <input
                                 readOnly
                                 type="email"
-                                value={userData.email || ''}
+                                value={user.email || ''}
                                 className="w-full px-4 py-3 rounded-lg bg-white/5 border border-white/10 text-white cursor-not-allowed"
                             />
                         </div>
@@ -179,9 +187,9 @@ const ProfilePage = React.memo(() => {
 
                     <div className="space-y-3">
                         {[
-                            { id: 'notif', label: 'Push Notifications', desc: 'Get notified about new releases', checked: true },
-                            { id: 'auto', label: 'Auto-play Next Track', desc: 'Continuous playback experience', checked: true },
-                            { id: 'hq', label: 'High Quality Audio', desc: 'Stream in higher quality', checked: false }
+                            { id: 'notif', label: 'Push Notifications', desc: 'Get notified about new releases' },
+                            { id: 'auto', label: 'Auto-play Next Track', desc: 'Continuous playback experience' },
+                            { id: 'hq', label: 'High Quality Audio', desc: 'Stream in higher quality' }
                         ].map((setting) => (
                             <div key={setting.id} className="flex items-center justify-between p-4 rounded-lg bg-white/5 hover:bg-white/10 transition-all">
                                 <div>
@@ -189,7 +197,12 @@ const ProfilePage = React.memo(() => {
                                     <p className="text-white/40 text-sm">{setting.desc}</p>
                                 </div>
                                 <label className="relative inline-flex items-center cursor-pointer">
-                                    <input type="checkbox" className="sr-only peer" defaultChecked={setting.checked} />
+                                    <input
+                                        type="checkbox"
+                                        className="sr-only peer"
+                                        checked={preferences[setting.id]}
+                                        onChange={() => handlePreferenceToggle(setting.id)}
+                                    />
                                     <div className="w-11 h-6 bg-white/10 rounded-full peer peer-checked:bg-green-500 peer-focus:ring-2 peer-focus:ring-green-500/30 transition-all">
                                         <div className="absolute top-0.5 left-0.5 bg-white w-5 h-5 rounded-full transition-transform peer-checked:translate-x-5"></div>
                                     </div>
@@ -201,7 +214,10 @@ const ProfilePage = React.memo(() => {
 
                 {/* Actions */}
                 <div className="flex gap-4">
-                    <button className="flex-1 px-6 py-3 bg-white text-black rounded-lg font-bold hover:bg-white/90 transition-all">
+                    <button
+                        onClick={handleSave}
+                        className="flex-1 px-6 py-3 bg-white text-black rounded-lg font-bold hover:bg-white/90 transition-all"
+                    >
                         Save Changes
                     </button>
                     <button
@@ -216,6 +232,5 @@ const ProfilePage = React.memo(() => {
         </MainLayout>
     );
 });
-
 export default ProfilePage;
 
