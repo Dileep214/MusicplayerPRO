@@ -20,6 +20,14 @@ export const MusicProvider = ({ children }) => {
     const [showNowPlayingView, setShowNowPlayingView] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
     const [favorites, setFavorites] = useState([]);
+    const [recentlyPlayed, setRecentlyPlayed] = useState(() => {
+        try {
+            const saved = localStorage.getItem('recently_played');
+            return saved ? JSON.parse(saved) : [];
+        } catch {
+            return [];
+        }
+    });
     const [isBuffering, setIsBuffering] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [user, setUser] = useState(() => {
@@ -221,30 +229,32 @@ export const MusicProvider = ({ children }) => {
                 fetchPromises.push(api.get('/api/user/favorites'));
             }
 
-            const responses = await Promise.all(fetchPromises);
+            const [songsRes, playlistsRes, albumsRes, favoritesRes] = await Promise.allSettled(fetchPromises);
 
-            const [songsRes, playlistsRes, albumsRes, favoritesRes] = responses;
-            const songsData = songsRes.data;
-            const playlistsData = playlistsRes.data;
-            const albumsData = albumsRes.data;
-            const favoritesData = favoritesRes?.data || [];
+            const songsData = songsRes.status === 'fulfilled' ? songsRes.value.data : [];
+            const playlistsData = playlistsRes.status === 'fulfilled' ? playlistsRes.value.data : [];
+            const albumsData = albumsRes.status === 'fulfilled' ? albumsRes.value.data : [];
+            const favoritesData = (favoritesRes?.status === 'fulfilled' && favoritesRes.value?.data) ? favoritesRes.value.data : [];
 
-            // Shuffling only if it's the first load or forced
-            const processedSongs = force || !hasData ? shuffleArray(songsData) : songsData;
-            setSongs(processedSongs);
-            localStorage.setItem('cached_songs', JSON.stringify(processedSongs));
+            // Only update if we actually got some data
+            if (songsRes.status === 'fulfilled') {
+                const processedSongs = force || !hasData ? shuffleArray(songsData) : songsData;
+                setSongs(processedSongs);
+                localStorage.setItem('cached_songs', JSON.stringify(processedSongs));
+            }
 
-            const normalizedAlbums = albumsData.map(album => ({
-                ...album,
-                name: album.title,
-                isAlbum: true
-            }));
+            if (playlistsRes.status === 'fulfilled' && albumsRes.status === 'fulfilled') {
+                const normalizedAlbums = albumsData.map(album => ({
+                    ...album,
+                    name: album.title,
+                    isAlbum: true
+                }));
+                const combinedPlaylists = [...playlistsData, ...normalizedAlbums];
+                setPlaylists(combinedPlaylists);
+                localStorage.setItem('cached_playlists', JSON.stringify(combinedPlaylists));
+            }
 
-            const combinedPlaylists = [...playlistsData, ...normalizedAlbums];
-            setPlaylists(combinedPlaylists);
-            localStorage.setItem('cached_playlists', JSON.stringify(combinedPlaylists));
-
-            if (favoritesData) {
+            if (favoritesRes?.status === 'fulfilled') {
                 const favIds = favoritesData.map(f => String(f._id || f));
                 setFavorites(favIds);
                 localStorage.setItem('cached_favorites', JSON.stringify(favIds));
@@ -423,6 +433,19 @@ export const MusicProvider = ({ children }) => {
         }
     }, [isPlaying]);
 
+    // Track Recently Played
+    useEffect(() => {
+        if (currentSongId) {
+            setRecentlyPlayed(prev => {
+                const safeId = String(currentSongId);
+                const filtered = prev.filter(id => String(id) !== safeId);
+                const updated = [safeId, ...filtered].slice(0, 10); // Keep last 10
+                localStorage.setItem('recently_played', JSON.stringify(updated));
+                return updated;
+            });
+        }
+    }, [currentSongId]);
+
     // Proper Cleanup for the Audio Instance
     useEffect(() => {
         const audio = audioRef.current;
@@ -464,6 +487,7 @@ export const MusicProvider = ({ children }) => {
         filteredSongs,
         isBuffering,
         isLoading,
+        recentlyPlayed,
         favorites, setFavorites,
         toggleFavorite,
         formatUrl,
@@ -478,6 +502,7 @@ export const MusicProvider = ({ children }) => {
         repeatMode, isAllSongsView, selectedPlaylist, searchTerm,
         showNowPlayingView, filteredSongs, favorites, toggleFavorite,
         isBuffering, isLoading,
+        recentlyPlayed,
         formatUrl, fetchLibraryData, togglePlay, handleNext, handlePrevious, handleSeek,
         skipForward, skipBackward, stopPlayback,
         user, updateUser, login, logout

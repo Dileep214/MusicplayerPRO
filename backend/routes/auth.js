@@ -54,8 +54,18 @@ router.post('/signup', async (req, res) => {
         // 5. Save to DB
         await newUser.save();
 
+        // 6. Generate Tokens
+        const accessToken = generateAccessToken(newUser);
+        const refreshToken = generateRefreshToken(newUser);
+
+        // Save refresh token to user
+        newUser.refreshTokens.push(refreshToken);
+        await newUser.save();
+
         res.status(201).json({
             message: 'User registered successfully',
+            accessToken,
+            refreshToken,
             user: {
                 id: newUser._id,
                 name: newUser.name,

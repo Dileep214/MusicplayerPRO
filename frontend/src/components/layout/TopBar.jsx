@@ -43,6 +43,13 @@ const TopBar = ({ onMenuClick }) => {
                     )}
                 </div>
 
+                {/* Center: Promo Text */}
+                <div className="hidden md:flex items-center justify-center flex-1">
+                    <p className="text-sm font-bold tracking-widest text-white/40 uppercase animate-pulse">
+                        Enjoy the free <span className="text-green-400">MUSIC</span>
+                    </p>
+                </div>
+
                 {/* Right: User Actions */}
                 <div className="flex items-center gap-3 flex-shrink-0">
                     {user && (

@@ -19,6 +19,18 @@ api.interceptors.request.use(
     }
 );
 
+let isRefreshing = false;
+let refreshSubscribers = [];
+
+const subscribeTokenRefresh = (cb) => {
+    refreshSubscribers.push(cb);
+};
+
+const onRefreshed = (token) => {
+    refreshSubscribers.map((cb) => cb(token));
+    refreshSubscribers = [];
+};
+
 // Response interceptor for refreshing the token and handling cold starts
 api.interceptors.response.use(
     (response) => response,
@@ -26,7 +38,6 @@ api.interceptors.response.use(
         const originalRequest = error.config;
 
         // 1. Handle Cold Start / Server Sleeping (Render Free Tier)
-        // If it's a network error or a 5xx error (standard for sleeping services)
         if ((!error.response || error.response.status >= 500) && !originalRequest._retryWakeup) {
             originalRequest._retryWakeup = true;
             console.log('📡 Server might be sleeping (Cold Start). Retrying in 3 seconds...');
@@ -36,23 +47,49 @@ api.interceptors.response.use(
 
         // 2. Handle Token Expiration
         if ((error.response?.status === 401 || error.response?.status === 403) && !originalRequest._retry) {
+            if (isRefreshing) {
+                return new Promise((resolve) => {
+                    subscribeTokenRefresh((token) => {
+                        originalRequest._retry = true;
+                        originalRequest.headers.Authorization = `Bearer ${token}`;
+                        resolve(api(originalRequest));
+                    });
+                });
+            }
+
             originalRequest._retry = true;
+            isRefreshing = true;
+
             const refreshToken = localStorage.getItem('refreshToken');
 
             if (refreshToken) {
                 try {
                     const res = await axios.post(`${API_URL}/api/auth/refresh`, { refreshToken });
                     if (res.status === 200) {
-                        localStorage.setItem('accessToken', res.data.accessToken);
-                        localStorage.setItem('refreshToken', res.data.refreshToken);
-                        api.defaults.headers.common['Authorization'] = `Bearer ${res.data.accessToken}`;
+                        const { accessToken, refreshToken: newRefreshToken } = res.data;
+
+                        localStorage.setItem('accessToken', accessToken);
+                        localStorage.setItem('refreshToken', newRefreshToken);
+
+                        api.defaults.headers.common['Authorization'] = `Bearer ${accessToken}`;
+                        originalRequest.headers.Authorization = `Bearer ${accessToken}`;
+
+                        isRefreshing = false;
+                        onRefreshed(accessToken);
+
                         return api(originalRequest);
                     }
                 } catch (refreshError) {
                     console.error('Token refresh failed:', refreshError);
+                    isRefreshing = false;
                     localStorage.clear();
                     window.location.href = '/login';
+                    return Promise.reject(refreshError);
                 }
+            } else {
+                // No refresh token, force login
+                localStorage.clear();
+                window.location.href = '/login';
             }
         }
         return Promise.reject(error);

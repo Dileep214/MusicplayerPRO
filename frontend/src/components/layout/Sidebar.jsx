@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Home, BookOpen, User, LayoutDashboard, Music, X, Menu } from 'lucide-react';
+import { Home, BookOpen, User, LayoutDashboard, Music, X, Menu, History, Play } from 'lucide-react';
 import { useMusic } from '../../context/MusicContext';
 
 const NAV_LINKS_BASE = [
@@ -11,7 +11,10 @@ const NAV_LINKS_BASE = [
 
 const Sidebar = ({ isOpen, onClose }) => {
     const location = useLocation();
-    const { user, formatUrl } = useMusic();
+    const {
+        user, formatUrl, recentlyPlayed, songs,
+        setCurrentSongId, setIsPlaying, currentSongId, cleanName
+    } = useMusic();
 
     const isAdmin = React.useMemo(() =>
         user && user.role === 'admin' && user.email?.toLowerCase() === 'dileepkomarthi@gmail.com',
@@ -88,6 +91,55 @@ const Sidebar = ({ isOpen, onClose }) => {
                         );
                     })}
                 </nav>
+
+                {/* Recently Played Section */}
+                {(recentlyPlayed || []).length > 0 && (
+                    <div className="px-3 pb-6 flex-1 overflow-hidden flex flex-col min-h-0">
+                        <div className="px-4 mb-3 flex items-center gap-2 text-white/40">
+                            <History className="w-4 h-4" />
+                            <span className="text-[10px] font-bold uppercase tracking-wider">Recently Played</span>
+                        </div>
+                        <div className="flex-1 overflow-y-auto space-y-1 pr-2 custom-scrollbar">
+                            {recentlyPlayed.map(id => {
+                                const song = songs.find(s => String(s._id) === String(id));
+                                if (!song) return null;
+                                const isActive = String(currentSongId) === String(song._id);
+
+                                return (
+                                    <button
+                                        key={id}
+                                        onClick={() => {
+                                            setCurrentSongId(song._id);
+                                            setIsPlaying(true);
+                                            onClose();
+                                        }}
+                                        className={`
+                                            w-full flex items-center gap-3 px-3 py-2 rounded-xl transition-all group
+                                            ${isActive ? 'bg-green-500/10 text-green-400' : 'text-white/50 hover:text-white hover:bg-white/5'}
+                                        `}
+                                    >
+                                        <div className="w-8 h-8 rounded-lg overflow-hidden flex-shrink-0 bg-white/5 relative">
+                                            <img
+                                                src={formatUrl(song.coverImg)}
+                                                alt=""
+                                                className={`w-full h-full object-cover ${isActive ? 'opacity-50' : 'group-hover:opacity-50'}`}
+                                            />
+                                            {(isActive || true) && (
+                                                <div className={`absolute inset-0 flex items-center justify-center ${isActive ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
+                                                    <Play className={`w-3 h-3 ${isActive ? 'fill-green-400 text-green-400' : 'fill-white text-white'}`} />
+                                                </div>
+                                            )}
+                                        </div>
+                                        <div className="flex-1 min-w-0 text-left">
+                                            <p className="text-xs font-semibold truncate">{cleanName(song.title)}</p>
+                                            <p className="text-[10px] opacity-60 truncate">{song.artist}</p>
+                                        </div>
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    </div>
+                )}
 
                 {/* User Info */}
                 {user && (
