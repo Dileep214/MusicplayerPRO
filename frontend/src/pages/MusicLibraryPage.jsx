@@ -21,7 +21,7 @@ const MusicLibraryPage = () => {
         currentSongId, setCurrentSongId,
         setIsPlaying,
         selectedPlaylist, setSelectedPlaylist,
-        searchTerm,
+        searchTerm, setSearchTerm,
         filteredSongs,
         favorites, toggleFavorite,
         formatUrl,
@@ -44,6 +44,13 @@ const MusicLibraryPage = () => {
         }
         return () => clearTimeout(timeout);
     }, [isLoading]);
+
+    // Handle initial selection from context
+    useEffect(() => {
+        if (selectedPlaylist) {
+            setActiveView('playlist-detail');
+        }
+    }, [selectedPlaylist]);
 
     // Quote rotation
     useEffect(() => {
@@ -80,8 +87,9 @@ const MusicLibraryPage = () => {
 
     const handlePlaylistClick = useCallback((playlist) => {
         setSelectedPlaylist(playlist);
+        setSearchTerm('');
         setActiveView('playlist-detail');
-    }, [setSelectedPlaylist]);
+    }, [setSelectedPlaylist, setSearchTerm]);
 
     const handleSongClick = useCallback((song) => {
         setCurrentSongId(song._id || song);
@@ -130,6 +138,7 @@ const MusicLibraryPage = () => {
                         <button
                             onClick={() => {
                                 setSelectedPlaylist(null);
+                                setSearchTerm('');
                                 setActiveView('all-songs');
                             }}
                             disabled={isLoading}
@@ -144,6 +153,7 @@ const MusicLibraryPage = () => {
                         <button
                             onClick={() => {
                                 setSelectedPlaylist({ name: 'Favorite Songs', songs: favorites });
+                                setSearchTerm('');
                                 setActiveView('favorites');
                             }}
                             disabled={isLoading}

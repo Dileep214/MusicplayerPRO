@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import MainLayout from '../components/layout/MainLayout';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Play, ChevronRight, Music2, Heart, Disc3 } from 'lucide-react';
 import { useMusic } from '../context/MusicContext';
 
@@ -100,10 +100,11 @@ const HomePage = () => {
     const {
         user, songs, playlists,
         currentSongId, setCurrentSongId, setIsPlaying,
-        favorites, toggleFavorite,
-        formatUrl, cleanName, setSelectedPlaylist, setIsAllSongsView
+        favorites, toggleFavorite, banner,
+        formatUrl, cleanName, setSelectedPlaylist, setSearchTerm, setIsAllSongsView
     } = useMusic();
 
+    const navigate = useNavigate();
     const userName = user?.name?.split(' ')[0] || 'Music Lover';
 
     /* pick 6 featured playlists/albums */
@@ -119,12 +120,16 @@ const HomePage = () => {
     const heroPlaylist = featuredPlaylists[0] || null;
 
     const handlePlaySong = (song) => {
+        setSelectedPlaylist(null);
+        setSearchTerm('');
         setCurrentSongId(song._id || song);
         setIsPlaying(true);
     };
 
     const handlePlaylistClick = (playlist) => {
         setSelectedPlaylist(playlist);
+        setSearchTerm('');
+        navigate('/library');
     };
 
     const greetingTime = () => {
@@ -141,10 +146,10 @@ const HomePage = () => {
                 {/* ─── HERO ─── */}
                 <div className="relative rounded-3xl overflow-hidden min-h-[300px] flex items-end">
                     {/* Background image */}
-                    {heroPlaylist && (
+                    {(banner?.imageUrl || heroPlaylist) && (
                         <img
-                            src={formatUrl(heroPlaylist.imageUrl || heroPlaylist.coverImg, 'large')}
-                            alt={heroPlaylist.name}
+                            src={formatUrl(banner?.imageUrl || heroPlaylist?.imageUrl || heroPlaylist?.coverImg, 'large')}
+                            alt={banner?.title || heroPlaylist?.name}
                             className="absolute inset-0 w-full h-full object-cover"
                         />
                     )}
@@ -158,28 +163,30 @@ const HomePage = () => {
                             {greetingTime()}, {userName} 👋
                         </p>
                         <h1 className="text-4xl md:text-5xl font-black text-white mb-3 leading-tight">
-                            {heroPlaylist ? cleanName(heroPlaylist.name) : 'Your Music'}
+                            {banner?.title || (heroPlaylist ? cleanName(heroPlaylist.name) : 'Your Music')}
                         </h1>
                         <p className="text-white/60 text-sm mb-6 leading-relaxed">
-                            {heroPlaylist
+                            {banner?.subtitle || (heroPlaylist
                                 ? `${heroPlaylist.songs?.length || 0} tracks ready to play`
-                                : 'Discover and enjoy your personal music collection.'}
+                                : 'Discover and enjoy your personal music collection.')}
                         </p>
                         <div className="flex gap-3 flex-wrap">
                             <Link
-                                to="/library"
-                                onClick={() => heroPlaylist && handlePlaylistClick(heroPlaylist)}
+                                to={banner?.buttonLink || "/library"}
+                                onClick={() => !banner?.buttonLink && heroPlaylist && handlePlaylistClick(heroPlaylist)}
                                 className="inline-flex items-center gap-2 px-6 py-3 bg-green-500 hover:bg-green-400 text-black font-bold rounded-full transition-all shadow-xl shadow-green-500/30 hover:scale-105 active:scale-95"
                             >
                                 <Play className="w-4 h-4 fill-black" />
-                                Play Now
+                                {banner?.buttonText || 'Play Now'}
                             </Link>
-                            <Link
-                                to="/library"
-                                className="inline-flex items-center gap-2 px-6 py-3 bg-white/10 hover:bg-white/20 text-white font-bold rounded-full border border-white/20 transition-all hover:scale-105 active:scale-95 backdrop-blur-sm"
-                            >
-                                Browse Library
-                            </Link>
+                            {!banner && (
+                                <Link
+                                    to="/library"
+                                    className="inline-flex items-center gap-2 px-6 py-3 bg-white/10 hover:bg-white/20 text-white font-bold rounded-full border border-white/20 transition-all hover:scale-105 active:scale-95 backdrop-blur-sm"
+                                >
+                                    Browse Library
+                                </Link>
+                            )}
                         </div>
                     </div>
                 </div>

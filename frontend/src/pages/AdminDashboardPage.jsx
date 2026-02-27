@@ -9,8 +9,10 @@ import {
     Trash2,
     LayoutDashboard,
     ChevronRight,
-    Pencil
+    Pencil,
+    Image as ImageIcon
 } from 'lucide-react';
+import BannerEditSection from '../components/BannerEditSection';
 import AddSongModal from '../components/AddSongModal';
 import AddAlbumModal from '../components/AddAlbumModal';
 import AlbumEditModal from '../components/AlbumEditModal';
@@ -92,7 +94,11 @@ const AdminDashboardPage = React.memo(() => {
 
     const handleTabChangeSongs = useCallback(() => setActiveTab('songs'), []);
     const handleTabChangeAlbums = useCallback(() => setActiveTab('albums'), []);
-    const handleAddClick = useCallback(() => activeTab === 'songs' ? setIsSongModalOpen(true) : setIsAlbumModalOpen(true), [activeTab]);
+    const handleTabChangeBanner = useCallback(() => setActiveTab('banner'), []);
+    const handleAddClick = useCallback(() => {
+        if (activeTab === 'songs') setIsSongModalOpen(true);
+        else if (activeTab === 'albums') setIsAlbumModalOpen(true);
+    }, [activeTab]);
     const handleCloseSongModal = useCallback(() => setIsSongModalOpen(false), []);
     const handleCloseAlbumModal = useCallback(() => setIsAlbumModalOpen(false), []);
 
@@ -145,15 +151,27 @@ const AdminDashboardPage = React.memo(() => {
                                 <Disc className="w-4 h-4" />
                                 Albums
                             </button>
+                            <button
+                                onClick={handleTabChangeBanner}
+                                className={`flex-1 sm:flex-initial px-6 py-2 rounded-lg font-semibold transition-all duration-200 flex items-center justify-center gap-2 ${activeTab === 'banner'
+                                    ? 'bg-green-500 text-black shadow-lg shadow-green-500/30'
+                                    : 'text-white/60 hover:text-white'
+                                    }`}
+                            >
+                                <ImageIcon className="w-4 h-4" />
+                                Banner
+                            </button>
                         </div>
 
-                        <button
-                            onClick={handleAddClick}
-                            className="bg-green-500 hover:bg-green-600 text-black font-bold px-6 py-2.5 rounded-xl flex items-center justify-center gap-2 transition-all active:scale-95 shadow-lg shadow-green-500/30"
-                        >
-                            <Plus className="w-5 h-5" />
-                            {activeTab === 'songs' ? 'Add Song' : 'Add Album'}
-                        </button>
+                        {activeTab !== 'banner' && (
+                            <button
+                                onClick={handleAddClick}
+                                className="bg-green-500 hover:bg-green-600 text-black font-bold px-6 py-2.5 rounded-xl flex items-center justify-center gap-2 transition-all active:scale-95 shadow-lg shadow-green-500/30"
+                            >
+                                <Plus className="w-5 h-5" />
+                                {activeTab === 'songs' ? 'Add Song' : 'Add Album'}
+                            </button>
+                        )}
                     </div>
 
                     {/* Table */}
@@ -213,7 +231,7 @@ const AdminDashboardPage = React.memo(() => {
                                     ))}
                                 </tbody>
                             </table>
-                        ) : (
+                        ) : activeTab === 'albums' ? (
                             <table className="w-full text-left">
                                 <thead>
                                     <tr className="text-white/40 text-sm border-b border-white/5 uppercase tracking-wider">
@@ -274,6 +292,8 @@ const AdminDashboardPage = React.memo(() => {
                                     ))}
                                 </tbody>
                             </table>
+                        ) : (
+                            <BannerEditSection />
                         )}
                     </div>
                 </div>

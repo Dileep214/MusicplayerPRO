@@ -38,6 +38,7 @@ export const MusicProvider = ({ children }) => {
             return null;
         }
     });
+    const [banner, setBanner] = useState(null);
 
     const updateUser = useCallback((newData) => {
         setUser(prev => {
@@ -147,27 +148,44 @@ export const MusicProvider = ({ children }) => {
 
     const togglePlay = useCallback(() => setIsPlaying(prev => !prev), []);
 
-    const handleNext = useCallback((stopAtEnd = false) => {
+    const handleNext = useCallback((forceNext = true) => {
         if (filteredSongs.length === 0) return;
+
+        // Single song repeat handler
         if (repeatMode === 'one') {
             audioRef.current.currentTime = 0;
-            audioRef.current.play();
+            audioRef.current.play().catch(e => console.error("Playback error:", e));
             return;
         }
 
         let nextIndex;
         const currentIndex = filteredSongs.findIndex(s => String(s._id || s) === String(currentSongId));
 
-        if (isShuffle) {
-            nextIndex = Math.floor(Math.random() * filteredSongs.length);
+        if (isShuffle && filteredSongs.length > 1) {
+            // Pick a random song that is NOT the current one
+            let newIndex;
+            do {
+                newIndex = Math.floor(Math.random() * filteredSongs.length);
+            } while (newIndex === currentIndex);
+            nextIndex = newIndex;
         } else {
             nextIndex = currentIndex + 1;
+            // Loop back to start instead of stopping
             if (nextIndex >= filteredSongs.length) {
-                if (stopAtEnd) return;
                 nextIndex = 0;
             }
         }
-        setCurrentSongId(filteredSongs[nextIndex]?._id || filteredSongs[nextIndex]);
+
+        const nextSong = filteredSongs[nextIndex];
+        const nextSongId = nextSong?._id || nextSong;
+
+        if (String(nextSongId) === String(currentSongId)) {
+            // If it's the same song (e.g. only 1 song in list), restart it
+            audioRef.current.currentTime = 0;
+            audioRef.current.play().catch(e => console.error("Playback error:", e));
+        } else {
+            setCurrentSongId(nextSongId);
+        }
         setIsPlaying(true);
     }, [filteredSongs, isShuffle, repeatMode, currentSongId]);
 
@@ -221,7 +239,8 @@ export const MusicProvider = ({ children }) => {
             const fetchPromises = [
                 api.get('/api/songs'),
                 api.get('/api/playlists'),
-                api.get('/api/albums')
+                api.get('/api/albums'),
+                api.get('/api/banner')
             ];
 
             // Only fetch favorites if logged in
@@ -229,12 +248,15 @@ export const MusicProvider = ({ children }) => {
                 fetchPromises.push(api.get('/api/user/favorites'));
             }
 
-            const [songsRes, playlistsRes, albumsRes, favoritesRes] = await Promise.allSettled(fetchPromises);
+            const [songsRes, playlistsRes, albumsRes, bannerRes, favoritesRes] = await Promise.allSettled(fetchPromises);
 
             const songsData = songsRes.status === 'fulfilled' ? songsRes.value.data : [];
             const playlistsData = playlistsRes.status === 'fulfilled' ? playlistsRes.value.data : [];
             const albumsData = albumsRes.status === 'fulfilled' ? albumsRes.value.data : [];
+            const bannerData = bannerRes.status === 'fulfilled' ? bannerRes.value.data : null;
             const favoritesData = (favoritesRes?.status === 'fulfilled' && favoritesRes.value?.data) ? favoritesRes.value.data : [];
+
+            if (bannerData) setBanner(bannerData);
 
             // Only update if we actually got some data
             if (songsRes.status === 'fulfilled') {
@@ -343,7 +365,7 @@ export const MusicProvider = ({ children }) => {
         const handleError = () => setIsBuffering(false);
 
         const handleEnded = () => {
-            handleNext(repeatMode === 'none' && !isShuffle);
+            handleNext();
         };
 
         audio.addEventListener('timeupdate', handleTimeUpdate);
@@ -475,6 +497,7 @@ export const MusicProvider = ({ children }) => {
         playlists, setPlaylists,
         currentSongId, setCurrentSongId,
         currentSong,
+        banner, setBanner,
         isPlaying, setIsPlaying,
         currentTime, duration, progress,
         volume, setVolume,
@@ -497,7 +520,7 @@ export const MusicProvider = ({ children }) => {
         togglePlay, handleNext, handlePrevious, handleSeek, skipForward, skipBackward, stopPlayback,
         user, updateUser, login, logout
     }), [
-        songs, playlists, currentSongId, currentSong, isPlaying,
+        songs, playlists, currentSongId, currentSong, banner, isPlaying,
         currentTime, duration, progress, volume, isShuffle,
         repeatMode, isAllSongsView, selectedPlaylist, searchTerm,
         showNowPlayingView, filteredSongs, favorites, toggleFavorite,

@@ -13,7 +13,8 @@ const Sidebar = ({ isOpen, onClose }) => {
     const location = useLocation();
     const {
         user, formatUrl, recentlyPlayed, songs,
-        setCurrentSongId, setIsPlaying, currentSongId, cleanName
+        setCurrentSongId, setIsPlaying, currentSongId, cleanName,
+        setSelectedPlaylist, setSearchTerm
     } = useMusic();
 
     const isAdmin = React.useMemo(() =>
@@ -109,6 +110,8 @@ const Sidebar = ({ isOpen, onClose }) => {
                                     <button
                                         key={id}
                                         onClick={() => {
+                                            setSelectedPlaylist(null);
+                                            setSearchTerm('');
                                             setCurrentSongId(song._id);
                                             setIsPlaying(true);
                                             onClose();

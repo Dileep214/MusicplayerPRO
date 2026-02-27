@@ -12,6 +12,7 @@ const playlistRoutes = require('./routes/playlists');
 const albumRoutes = require('./routes/albums');
 const adminRoutes = require('./routes/admin');
 const userRoutes = require('./routes/user');
+const bannerRoutes = require('./routes/banner');
 
 const helmet = require('helmet');
 const morgan = require('morgan');
@@ -63,6 +64,7 @@ app.use('/api/playlists', playlistRoutes);
 app.use('/api/albums', albumRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/user', userRoutes);
+app.use('/api/banner', bannerRoutes);
 
 app.get('/', (req, res) => {
     res.send('MusicPlayerPRO Backend is running!');
